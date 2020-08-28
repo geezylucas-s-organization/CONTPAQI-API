@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 
-namespace TodoApi
+namespace CONTPAQ_API
 {
     public class FunctionReturnedValue
     {
@@ -10,6 +11,10 @@ namespace TodoApi
         public List<Producto> productos { get; set; }
         public List<Cliente> clientes { get; set; }
         public List<Concepto> conceptos { get; set; }
+        public List<InfoDocumento> infoDocumentos { get; set; }
+        public InfoDocumento infoDocumento { get; set; }
+        public bool isFirst { get; set; }
+        public bool isLast { get; set; }
         public FunctionReturnedValue(bool isValid, string message)
         {
             this.isValid = isValid;
@@ -40,6 +45,19 @@ namespace TodoApi
             this.isValid = isValid;
             this.conceptos = conceptos;
         }
-        
+
+        public FunctionReturnedValue(bool isValid, List<InfoDocumento> infoDocumentos, bool isLast, bool isFirst)
+        {
+            this.isValid = isValid;
+            this.infoDocumentos = infoDocumentos;
+            this.isFirst = isFirst;
+            this.isLast = isLast;
+        }
+
+        public FunctionReturnedValue(bool isValid, InfoDocumento infoDocumento)
+        {
+            this.isValid = isValid;
+            this.infoDocumento = infoDocumento;
+        }
     }
 }

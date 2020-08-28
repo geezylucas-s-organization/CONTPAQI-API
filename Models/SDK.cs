@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TodoApi
+namespace CONTPAQ_API
 {
     public class SDK
     {
@@ -354,8 +354,6 @@ namespace TodoApi
 
             public double folio;
         }
-        
-        
 
         #endregion
 
@@ -424,6 +422,27 @@ namespace TodoApi
         public static extern Int32 fEntregEnDiscoXML([MarshalAs(UnmanagedType.LPStr)] string aCodConcepto,
             [MarshalAs(UnmanagedType.LPStr)] string aSerie, double aFolio, int aFormato, string aFormatoAmigable);
 
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fPosPrimerDocumento();
+
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fPosUltimoDocumento();
+
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fPosSiguienteDocumento();
+
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fPosAnteriorDocumento();
+
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fPosBOF();
+
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fPosEOF();
+
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fLeeDatoDocumento(string aCampo, StringBuilder aValor, int aLen);
+
         #endregion
 
         #region Funciones de producto
@@ -467,6 +486,8 @@ namespace TodoApi
 
         [DllImport("MGWServicios.DLL")]
         public static extern int fBuscaCteProv(string aCodCteProv);
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fBuscaIdCteProv(int aIdCteProv);
 
         [DllImport("MGWServicios.DLL")]
         public static extern int fLeeDatoCteProv(string aCampo, StringBuilder aValr, int aLen);
@@ -482,10 +503,10 @@ namespace TodoApi
 
         [DllImport("MGWServicios.DLL")]
         public static extern int fBorraCteProv(string aCodCteProv);
-        
+
         [DllImport("MGWServicios.DLL")]
         public static extern int fPosPrimerCteProv();
-        
+
         [DllImport("MGWServicios.DLL")]
         public static extern int fPosSiguienteCteProv();
 
@@ -495,11 +516,16 @@ namespace TodoApi
 
         [DllImport("MGWServicios.DLL")]
         public static extern int fPosPrimerConceptoDocto();
-        
+
         [DllImport("MGWServicios.DLL")]
         public static extern int fPosSiguienteConceptoDocto();
+
         [DllImport("MGWServicios.DLL")]
         public static extern int fLeeDatoConceptoDocto(string aCampo, StringBuilder aValor, int aLen);
+
+        [DllImport("MGWServicios.DLL")]
+        public static extern int fBuscaConceptoDocto(string aCodConcepto);
+
         #endregion
 
         //Manejo de errores

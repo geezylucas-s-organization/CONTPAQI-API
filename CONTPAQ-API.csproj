@@ -2,13 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RuntimeIdentifier>win10-x86</RuntimeIdentifier>
-    <RootNamespace>TodoApi</RootNamespace>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="Controllers\Documento.cs" />
-  </ItemGroup>
-
-
+  
 </Project>

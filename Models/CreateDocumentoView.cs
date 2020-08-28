@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace TodoApi
+namespace CONTPAQ_API
 {
-    public class CreateDocumentoForm
+    public class CreateDocumentoView
     {
         public List<Producto> productosYServicios { get; set; }
         public List<Cliente> clientesYProveedores { get; set; }
@@ -14,6 +14,14 @@ namespace TodoApi
     {
         public string codigo { get; set; }
         public string nombre { get; set; }
+        public List<double> precios { get; set; }
+
+        public Producto(string codigo, string nombre, List<double> precios)
+        {
+            this.codigo = codigo;
+            this.nombre = nombre;
+            this.precios = precios;
+        }
 
         public Producto(string codigo, string nombre)
         {
@@ -41,11 +49,13 @@ namespace TodoApi
 
     public class Concepto
     {
+        public string codigoConcepto { get; set; }
         public string nombreConcepto { get; set; }
         public int noFolio { get; set; }
 
-        public Concepto(string nombreConcepto, int noFolio)
+        public Concepto(string codigoConcepto, string nombreConcepto, int noFolio)
         {
+            this.codigoConcepto = codigoConcepto;
             this.nombreConcepto = nombreConcepto;
             this.noFolio = noFolio;
         }
