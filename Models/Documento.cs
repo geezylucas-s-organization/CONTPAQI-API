@@ -8,6 +8,7 @@ namespace CONTPAQ_API
         public Cabecera cabecera { get; set; }
         public List<Movimiento> movimientos { get; set; }
     }
+
     public class Cabecera
     {
         public string codConcepto { get; set; }
@@ -33,11 +34,13 @@ namespace CONTPAQ_API
         public string nombreConcepto { get; set; }
         public int folio { get; set; }
         public string serie { get; set; }
+        
+        public string fecha { get; set; }
+
         //public string codCliente { get; set; }
         public string razonSocialCliente { get; set; }
         public string total { get; set; }
         public string pendiente { get; set; }
-        
     }
 
     public class ResponseListOfDocuments

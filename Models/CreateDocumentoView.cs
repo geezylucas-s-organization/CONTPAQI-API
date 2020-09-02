@@ -36,9 +36,9 @@ namespace CONTPAQ_API
         public string razonSocial { get; set; }
         public string rfc { get; set; }
 
-        public string moneda { get; set; }
+        public int moneda { get; set; }
 
-        public Cliente(string codigo, string razonSocial, string rfc, string moneda)
+        public Cliente(string codigo, string razonSocial, string rfc, int moneda)
         {
             this.codigo = codigo;
             this.razonSocial = razonSocial;
@@ -49,11 +49,11 @@ namespace CONTPAQ_API
 
     public class Concepto
     {
-        public string codigoConcepto { get; set; }
+        public int codigoConcepto { get; set; }
         public string nombreConcepto { get; set; }
         public int noFolio { get; set; }
 
-        public Concepto(string codigoConcepto, string nombreConcepto, int noFolio)
+        public Concepto(int codigoConcepto, string nombreConcepto, int noFolio)
         {
             this.codigoConcepto = codigoConcepto;
             this.nombreConcepto = nombreConcepto;

@@ -30,6 +30,8 @@ namespace CONTPAQ_API
                 options.AddDefaultPolicy(builder =>
                 {
                     builder.AllowAnyOrigin();
+                    builder.AllowAnyHeader();
+                    builder.AllowAnyMethod();
                 });
             });
             services.AddControllers();
@@ -46,15 +48,12 @@ namespace CONTPAQ_API
             // app.UseHttpsRedirection();
 
             app.UseRouting();
-            
+
             app.UseCors();
 
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }
 }

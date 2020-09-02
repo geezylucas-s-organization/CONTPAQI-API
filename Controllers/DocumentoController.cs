@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using CONTPAQ_API.Services;
+using Microsoft.AspNetCore.Cors;
 
 namespace CONTPAQ_API.Controllers
 {
     [ApiController]
+    [EnableCors]
     [Route("api/[controller]")]
     public class DocumentoController : Controller
     {
@@ -46,7 +48,7 @@ namespace CONTPAQ_API.Controllers
         }
 
         [HttpGet("GetDocumentos")] // GET api/Documento/GetDocumentos
-        public ActionResult GetDocumentos([FromBody] InfoRequired infoRequired)
+        public ActionResult GetDocumentos([FromQuery (Name = "action")] string action, [FromQuery (Name = "numberOfDocs")] int numberOfDocs)
         {
             // FunctionReturnedValue functionReturnedValue = SDKServices.Conectar();
             //
@@ -57,31 +59,31 @@ namespace CONTPAQ_API.Controllers
 
             FunctionReturnedValue functionReturnedValue;
 
-            switch (infoRequired.action)
+            switch (action)
             {
                 case "last":
-                    functionReturnedValue = DocumentoServices.returnLastDocumentos(infoRequired.numberOfDocs);
+                    functionReturnedValue = DocumentoServices.returnLastDocumentos(numberOfDocs);
                     break;
                 case "first":
-                    functionReturnedValue = DocumentoServices.returnFirstDocumentos(infoRequired.numberOfDocs);
+                    functionReturnedValue = DocumentoServices.returnFirstDocumentos(numberOfDocs);
                     break;
                 case "next":
                     if (prevAction == "prev")
-                        DocumentoServices.moveForwardsDocumentos(infoRequired.numberOfDocs);
+                        DocumentoServices.moveForwardsDocumentos(numberOfDocs);
 
-                    functionReturnedValue = DocumentoServices.returnNextDocumentos(infoRequired.numberOfDocs);
+                    functionReturnedValue = DocumentoServices.returnNextDocumentos(numberOfDocs);
                     break;
                 case "prev":
                     if (prevAction == "next")
-                        DocumentoServices.moveBackwardsDocumentos(infoRequired.numberOfDocs);
+                        DocumentoServices.moveBackwardsDocumentos(numberOfDocs);
 
-                    functionReturnedValue = DocumentoServices.returnPrevDocumentos(infoRequired.numberOfDocs);
+                    functionReturnedValue = DocumentoServices.returnPrevDocumentos(numberOfDocs);
                     break;
                 default:
                     return new StatusCodeResult(404);
             }
 
-            prevAction = infoRequired.action;
+            prevAction = action;
 
             ResponseListOfDocuments responseListOfDocuments = new ResponseListOfDocuments(
                 functionReturnedValue.infoDocumentos, functionReturnedValue.isLast, functionReturnedValue.isFirst);

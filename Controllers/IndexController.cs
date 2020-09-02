@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CONTPAQ_API.Controllers
 {
     [ApiController]
+    [EnableCors]
     [Route("[controller]")]
     public class IndexController : Controller
     {

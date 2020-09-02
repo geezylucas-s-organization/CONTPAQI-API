@@ -218,8 +218,8 @@ namespace CONTPAQ_API.Services
         {
             List<Cliente> lCliente = new List<Cliente>();
             StringBuilder aValor = new StringBuilder();
-            string codigoCliente, razonSocial, rfc, moneda;
-            int lError;
+            string codigoCliente, razonSocial, rfc;
+            int lError, moneda;
 
             lError = SDK.fPosPrimerCteProv();
 
@@ -234,7 +234,7 @@ namespace CONTPAQ_API.Services
                 codigoCliente = string.Empty;
                 razonSocial = string.Empty;
                 rfc = string.Empty;
-                moneda = string.Empty;
+                moneda = 0;
 
                 if (lError != 0)
                 {
@@ -275,7 +275,7 @@ namespace CONTPAQ_API.Services
                     return new FunctionReturnedValue(false, SDK.rError(lError));
                 }
 
-                moneda = aValor.ToString();
+                moneda = Convert.ToInt32(aValor.ToString());
 
                 lCliente.Add(new Cliente(codigoCliente, razonSocial, rfc, moneda));
             } while (lError == 0);
@@ -287,8 +287,8 @@ namespace CONTPAQ_API.Services
         {
             List<Concepto> lConcepto = new List<Concepto>();
             StringBuilder aValor = new StringBuilder();
-            string nombreConcepto, codigoConcepto;
-            int lError, noFolio;
+            string nombreConcepto;
+            int lError, noFolio, codigoConcepto;
 
             lError = SDK.fPosPrimerConceptoDocto();
 
@@ -306,7 +306,7 @@ namespace CONTPAQ_API.Services
                     return new FunctionReturnedValue(false, SDK.rError(lError));
                 }
 
-                codigoConcepto = aValor.ToString();
+                codigoConcepto = Convert.ToInt32(aValor.ToString());
 
                 lError = SDK.fLeeDatoConceptoDocto("cNombreConcepto", aValor, 256);
 
@@ -330,7 +330,7 @@ namespace CONTPAQ_API.Services
                 lConcepto.Add(new Concepto(codigoConcepto, nombreConcepto, noFolio));
 
                 lError = SDK.fPosSiguienteConceptoDocto();
-                codigoConcepto = string.Empty;
+                codigoConcepto = 0;
                 nombreConcepto = string.Empty;
                 noFolio = 0;
                 if (lError != 0)
@@ -388,6 +388,15 @@ namespace CONTPAQ_API.Services
             }
 
             infoDocumento.serie = aValor.ToString();
+            
+            lError = SDK.fLeeDatoDocumento("cFecha", aValor, 256);
+
+            if (lError != 0)
+            {
+                return new FunctionReturnedValue(false, SDK.rError(lError));
+            }
+
+            infoDocumento.fecha = aValor.ToString();
 
             lError = SDK.fLeeDatoDocumento("cRazonSocial", aValor, 256);
 
