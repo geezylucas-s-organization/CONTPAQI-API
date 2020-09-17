@@ -115,7 +115,7 @@ namespace CONTPAQ_API
             public int cBanExcederCredito; // 0 = No se permite exceder crédito, 1 = Se permite exceder el crédito
             public double cDescuentoProntoPago;
             public int cDiasProntoPago;
-            double cInteresMoratorio;
+            public double cInteresMoratorio;
             public int cDiaPago;
             public int cDiasRevision;
 

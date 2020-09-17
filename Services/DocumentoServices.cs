@@ -6,7 +6,7 @@ namespace CONTPAQ_API.Services
 {
     public class DocumentoServices
     {
-        public static FunctionReturnedValue CreaDocto(Documento documento)
+        public static FunctionReturnedValue createDocumento(Documento documento)
         {
             int lError;
             StringBuilder serie = new StringBuilder("");
@@ -31,6 +31,7 @@ namespace CONTPAQ_API.Services
             lDocto.aNumMoneda = documento.cabecera.numMoneda;
             lDocto.aSerie = documento.cabecera.serie.ToString();
             lDocto.aTipoCambio = documento.cabecera.tipoCambio;
+            
 
             //Paso 2: Dar de alta el documento con su cabecera.
             lError = SDK.fAltaDocumento(ref idDocto, ref lDocto);
@@ -90,7 +91,7 @@ namespace CONTPAQ_API.Services
             int lError = 0;
             StringBuilder serie = new StringBuilder("");
             double folio = 0;
-            string codConcepto = "42017";
+            string codConcepto = "42017"; //Conceptos de Pago.
             string codCte = "CL001";
             SDK.tDocumento lDocto = new SDK.tDocumento();
             SDK.RegLlaveDoc factura = new SDK.RegLlaveDoc();

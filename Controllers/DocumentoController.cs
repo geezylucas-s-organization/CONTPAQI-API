@@ -93,22 +93,10 @@ namespace CONTPAQ_API.Controllers
             return Ok(jsonString);
         }
 
-        [HttpPost("CreateDocumento")] // POST api/Documento/CreateDocumento
+        [HttpPost] // POST api/Documento/CreateDocumento
         public ActionResult Post([FromBody] Documento documento)
         {
-            //documento = JsonSerializer.Deserialize<Documento>(doc);
-            //FunctionReturnedValue functionReturnedValue = SDKServices.Conectar();
-            // if (functionReturnedValue.isValid)
-            // {
-            //     DocumentoServices.CreaDocto(documento);
-            // }
-            // else
-            // {
-            //     return StatusCode(500, functionReturnedValue.message);
-            // }
-
-
-            FunctionReturnedValue functionReturnedValue = DocumentoServices.CreaDocto(documento);
+            FunctionReturnedValue functionReturnedValue = DocumentoServices.createDocumento(documento);
 
             if (!functionReturnedValue.isValid)
                 return StatusCode(500, functionReturnedValue.message);

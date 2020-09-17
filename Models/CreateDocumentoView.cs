@@ -6,7 +6,6 @@ namespace CONTPAQ_API
     {
         public List<Producto> productosYServicios { get; set; }
         public List<Cliente> clientesYProveedores { get; set; }
-
         public List<Concepto> conceptos { get; set; }
     }
 
@@ -15,11 +14,10 @@ namespace CONTPAQ_API
         public string codigo { get; set; }
         public string nombre { get; set; }
         public List<double> precios { get; set; }
-
+        
         public Producto(string codigo, string nombre, List<double> precios)
+            : this(codigo, nombre)
         {
-            this.codigo = codigo;
-            this.nombre = nombre;
             this.precios = precios;
         }
 
