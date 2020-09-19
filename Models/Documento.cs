@@ -43,27 +43,17 @@ namespace CONTPAQ_API
         public string pendiente { get; set; }
     }
 
-    public class ResponseListOfDocuments
+    public class ListOfDocuments
     {
         public List<InfoDocumento> data { get; set; }
-        public HeaderListOfDocuments header { get; set; }
-
-        public ResponseListOfDocuments(List<InfoDocumento> infoDocumentos, bool isLast, bool isFirst)
-        {
-            this.data = infoDocumentos;
-            this.header = new HeaderListOfDocuments(isLast, isFirst);
-        }
-    }
-
-    public class HeaderListOfDocuments
-    {
         public bool isLast { get; set; }
         public bool isFirst { get; set; }
-
-        public HeaderListOfDocuments(bool isLast, bool isFirst)
+        public ListOfDocuments(List<InfoDocumento> infoDocumentos, bool isLast, bool isFirst)
         {
+            this.data = infoDocumentos;
             this.isLast = isLast;
             this.isFirst = isFirst;
         }
     }
+
 }

@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Policy;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CONTPAQ_API.Services
 {
-    public class DocumentoServices
+    public class DocumentoServices : ContpaqItem
     {
-        public static FunctionReturnedValue createDocumento(Documento documento)
+        public bool createDocumento(Documento documento)
         {
-            int lError;
             StringBuilder serie = new StringBuilder("");
             int idDocto = 0;
             int idMovto = 0;
@@ -16,11 +17,12 @@ namespace CONTPAQ_API.Services
             SDK.tMovimiento lMovimiento = new SDK.tMovimiento();
 
             //Paso 1: Conseguir el folio del documento a realizar.
-            lError = SDK.fSiguienteFolio(documento.cabecera.codConcepto, documento.cabecera.serie,
+            errorCode = SDK.fSiguienteFolio(documento.cabecera.codConcepto, documento.cabecera.serie,
                 ref documento.cabecera.folio);
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                errorMessage = SDK.rError(errorCode);
+                return false;
             }
 
             //Cabecera
@@ -31,14 +33,15 @@ namespace CONTPAQ_API.Services
             lDocto.aNumMoneda = documento.cabecera.numMoneda;
             lDocto.aSerie = documento.cabecera.serie.ToString();
             lDocto.aTipoCambio = documento.cabecera.tipoCambio;
-            
+
 
             //Paso 2: Dar de alta el documento con su cabecera.
-            lError = SDK.fAltaDocumento(ref idDocto, ref lDocto);
+            errorCode = SDK.fAltaDocumento(ref idDocto, ref lDocto);
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                errorMessage = SDK.rError(errorCode);
+                return false;
             }
 
             //Paso 3: Se agregan los movimientos al documento.
@@ -50,40 +53,41 @@ namespace CONTPAQ_API.Services
                 lMovimiento.aUnidades = item.unidades; //Una compra
 
                 //Se da de alta un movimiento.
-                lError = SDK.fAltaMovimiento(idDocto, ref idMovto, ref lMovimiento);
-                if (lError != 0)
+                errorCode = SDK.fAltaMovimiento(idDocto, ref idMovto, ref lMovimiento);
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    errorMessage = SDK.rError(errorCode);
+                    return false;
                 }
             }
 
             //Paso 4: Se timbra el documento
-            lError = SDK.fEmitirDocumento(documento.cabecera.codConcepto,
+            errorCode = SDK.fEmitirDocumento(documento.cabecera.codConcepto,
                 documento.cabecera.serie.ToString(), documento.cabecera.folio, "12345678a", "");
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                errorMessage = SDK.rError(errorCode);
+                return false;
             }
-
             //Paso 5: Se exporta a XML o PDF
 
-            lError = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
+            errorCode = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
                 documento.cabecera.serie.ToString(), documento.cabecera.folio, 0, "");
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                errorMessage = SDK.rError(errorCode);
+                return false;
             }
 
-
-            lError = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
+            errorCode = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
                 documento.cabecera.serie.ToString(), documento.cabecera.folio, 1, "");
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                errorMessage = SDK.rError(errorCode);
+                return false;
             }
 
-
-            return new FunctionReturnedValue(true);
+            return true;
         }
 
         public static void CreaDoctoPago()
@@ -142,56 +146,52 @@ namespace CONTPAQ_API.Services
             }
         }
 
-        public static FunctionReturnedValue returnProductos()
+        public List<Producto> returnProductos()
         {
             List<Producto> lProductos = new List<Producto>();
             StringBuilder aValor = new StringBuilder();
-            string codigoProducto, nombreProducto;
-            int lError = 0;
 
-            lError = SDK.fPosPrimerProducto();
+            errorCode = SDK.fPosPrimerProducto();
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                return lProductos;
             }
 
-            do
+            while (SDK.fPosSiguienteProducto() == 0)
             {
                 List<double> lPrecios = new List<double>();
-                lError = SDK.fPosSiguienteProducto();
-                codigoProducto = string.Empty;
-                nombreProducto = string.Empty;
+                string codigoProducto, nombreProducto;
 
-                if (lError != 0)
+                // if (errorCode != 0)
+                // {
+                //     return lProductos;
+                // }
+
+                errorCode = SDK.fLeeDatoProducto("cCodigoProducto", aValor, 256);
+
+                if (errorCode != 0)
                 {
-                    break;
-                }
-
-                lError = SDK.fLeeDatoProducto("cCodigoProducto", aValor, 256);
-
-                if (lError != 0)
-                {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    return lProductos;
                 }
 
                 codigoProducto = aValor.ToString();
 
-                lError = SDK.fLeeDatoProducto("cNombreProducto", aValor, 256);
+                errorCode = SDK.fLeeDatoProducto("cNombreProducto", aValor, 256);
 
-                if (lError != 0)
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    return lProductos;
                 }
 
                 nombreProducto = aValor.ToString();
 
                 for (int i = 1; i <= 10; i++)
                 {
-                    lError = SDK.fLeeDatoProducto("cPrecio" + i, aValor, 256);
-                    if (lError != 0)
+                    errorCode = SDK.fLeeDatoProducto("cPrecio" + i, aValor, 256);
+                    if (errorCode != 0)
                     {
-                        return new FunctionReturnedValue(false, SDK.rError(lError));
+                        return lProductos;
                     }
 
                     if (Convert.ToDouble(aValor.ToString()) == 0)
@@ -210,119 +210,115 @@ namespace CONTPAQ_API.Services
                 {
                     lProductos.Add(new Producto(codigoProducto, nombreProducto, lPrecios));
                 }
-            } while (lError == 0);
+            }
 
-            return new FunctionReturnedValue(true, lProductos);
+            return lProductos;
         }
 
-        public static FunctionReturnedValue returnClientes()
+        public List<Cliente> returnClientes()
         {
             List<Cliente> lCliente = new List<Cliente>();
             StringBuilder aValor = new StringBuilder();
-            string codigoCliente, razonSocial, rfc;
-            int lError, moneda;
 
-            lError = SDK.fPosPrimerCteProv();
+            errorCode = SDK.fPosPrimerCteProv();
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                throw new Exception(errorCode + ": " + SDK.rError(errorCode));
             }
 
-            do
+            while (SDK.fPosSiguienteCteProv() == 0)
             {
-                lError = SDK.fPosSiguienteCteProv();
-                codigoCliente = string.Empty;
-                razonSocial = string.Empty;
-                rfc = string.Empty;
-                moneda = 0;
+                //errorCode = SDK.fPosSiguienteCteProv();
+                string codigoCliente, razonSocial, rfc;
+                int moneda;
 
-                if (lError != 0)
+                // if (errorCode != 0)
+                // {
+                //     break;
+                // }
+
+                errorCode = SDK.fLeeDatoCteProv("cCodigoCliente", aValor, 256);
+
+                if (errorCode != 0)
                 {
-                    break;
-                }
-
-                lError = SDK.fLeeDatoCteProv("cCodigoCliente", aValor, 256);
-
-                if (lError != 0)
-                {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(CodigoCliente): " + SDK.rError(errorCode));
                 }
 
                 codigoCliente = aValor.ToString();
 
-                lError = SDK.fLeeDatoCteProv("cRazonSocial", aValor, 256);
+                errorCode = SDK.fLeeDatoCteProv("cRazonSocial", aValor, 256);
 
-                if (lError != 0)
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(RazonSocial): " + SDK.rError(errorCode));
                 }
 
                 razonSocial = aValor.ToString();
 
-                lError = SDK.fLeeDatoCteProv("cRFC", aValor, 256);
+                errorCode = SDK.fLeeDatoCteProv("cRFC", aValor, 256);
 
-                if (lError != 0)
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(RFC): " + SDK.rError(errorCode));
                 }
 
                 rfc = aValor.ToString();
 
-                lError = SDK.fLeeDatoCteProv("cIDMoneda", aValor, 256);
+                errorCode = SDK.fLeeDatoCteProv("cIDMoneda", aValor, 256);
 
-                if (lError != 0)
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(IDMoneda): " + SDK.rError(errorCode));
                 }
 
                 moneda = Convert.ToInt32(aValor.ToString());
 
                 lCliente.Add(new Cliente(codigoCliente, razonSocial, rfc, moneda));
-            } while (lError == 0);
+            }
 
-            return new FunctionReturnedValue(true, lCliente);
+            return lCliente;
         }
 
-        public static FunctionReturnedValue returnConceptos()
+        public List<Concepto> returnConceptos()
         {
             List<Concepto> lConcepto = new List<Concepto>();
             StringBuilder aValor = new StringBuilder();
-            string nombreConcepto;
-            int lError, noFolio, codigoConcepto;
 
-            lError = SDK.fPosPrimerConceptoDocto();
+            errorCode = SDK.fPosPrimerConceptoDocto();
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                return lConcepto;
             }
 
-            do
+            while (SDK.fPosSiguienteConceptoDocto() == 0)
             {
-                lError = SDK.fLeeDatoConceptoDocto("cCodigoConcepto", aValor, 256);
+                string nombreConcepto;
+                int noFolio, codigoConcepto;
+                errorCode = SDK.fLeeDatoConceptoDocto("cCodigoConcepto", aValor, 256);
 
-                if (lError != 0)
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(CodigoConcepto): " + SDK.rError(errorCode));
                 }
 
                 codigoConcepto = Convert.ToInt32(aValor.ToString());
 
-                lError = SDK.fLeeDatoConceptoDocto("cNombreConcepto", aValor, 256);
+                errorCode = SDK.fLeeDatoConceptoDocto("cNombreConcepto", aValor, 256);
 
-                if (lError != 0)
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(NombreConcepto): " + SDK.rError(errorCode));
                 }
 
                 nombreConcepto = aValor.ToString();
 
-                lError = SDK.fLeeDatoConceptoDocto("cNoFolio", aValor, 256);
+                errorCode = SDK.fLeeDatoConceptoDocto("cNoFolio", aValor, 256);
 
-                if (lError != 0)
+                if (errorCode != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(NoFolio): " + SDK.rError(errorCode));
                 }
 
                 noFolio = (int) Convert.ToDouble(aValor.ToString());
@@ -330,277 +326,273 @@ namespace CONTPAQ_API.Services
 
                 lConcepto.Add(new Concepto(codigoConcepto, nombreConcepto, noFolio));
 
-                lError = SDK.fPosSiguienteConceptoDocto();
-                codigoConcepto = 0;
-                nombreConcepto = string.Empty;
-                noFolio = 0;
-                if (lError != 0)
-                {
-                    break;
-                }
-            } while (lError == 0);
+                //errorCode = SDK.fPosSiguienteConceptoDocto();
+            }
 
-            return new FunctionReturnedValue(true, lConcepto);
+            return lConcepto;
         }
 
-        private static FunctionReturnedValue returnDocumentos()
+        private InfoDocumento returnDocumentos()
         {
             StringBuilder aValor = new StringBuilder();
-            int lError;
             InfoDocumento infoDocumento = new InfoDocumento();
-            lError = SDK.fLeeDatoDocumento("cIdConceptoDocumento", aValor, 256);
+            errorCode = SDK.fLeeDatoDocumento("cIdConceptoDocumento", aValor, 256);
 
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+            if (errorCode != 0)
+                throw new Exception(errorCode + "(IdConcepto): " + SDK.rError(errorCode));
 
-            lError = SDK.fBuscaConceptoDocto(aValor.ToString());
+            errorCode = SDK.fBuscaConceptoDocto(aValor.ToString());
 
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+            if (errorCode != 0)
+                throw new Exception(errorCode + "(Concepto): " + SDK.rError(errorCode));
 
             SDK.fLeeDatoConceptoDocto("cCodigoConcepto", aValor, 256);
 
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+            if (errorCode != 0)
+                throw new Exception(errorCode + "(CodigoConcepto): " + SDK.rError(errorCode));
 
             infoDocumento.codConcepto = aValor.ToString();
 
             SDK.fLeeDatoConceptoDocto("cNombreConcepto", aValor, 256);
 
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+            if (errorCode != 0)
+                throw new Exception(errorCode + "(NombreConcepto): " + SDK.rError(errorCode));
 
             infoDocumento.nombreConcepto = aValor.ToString();
 
-            lError = SDK.fLeeDatoDocumento("cFolio", aValor, 256);
+            errorCode = SDK.fLeeDatoDocumento("cFolio", aValor, 256);
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                throw new Exception(errorCode + "(Folio): " + SDK.rError(errorCode));
             }
 
             infoDocumento.folio = (int) Convert.ToDouble(aValor.ToString());
 
-            lError = SDK.fLeeDatoDocumento("cSerieDocumento", aValor, 256);
+            errorCode = SDK.fLeeDatoDocumento("cSerieDocumento", aValor, 256);
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                throw new Exception(errorCode + "(SerieDocumento): " + SDK.rError(errorCode));
             }
 
             infoDocumento.serie = aValor.ToString();
-            
-            lError = SDK.fLeeDatoDocumento("cFecha", aValor, 256);
 
-            if (lError != 0)
+            errorCode = SDK.fLeeDatoDocumento("cFecha", aValor, 256);
+
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                throw new Exception(errorCode + "(Fecha): " + SDK.rError(errorCode));
             }
 
             infoDocumento.fecha = aValor.ToString();
 
-            lError = SDK.fLeeDatoDocumento("cRazonSocial", aValor, 256);
+            errorCode = SDK.fLeeDatoDocumento("cRazonSocial", aValor, 256);
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                throw new Exception(errorCode + "(RazonSocial): " + SDK.rError(errorCode));
             }
 
             infoDocumento.razonSocialCliente = aValor.ToString();
 
-            lError = SDK.fLeeDatoDocumento("cTotal", aValor, 256);
+            errorCode = SDK.fLeeDatoDocumento("cTotal", aValor, 256);
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                throw new Exception(errorCode + "(Total): " + SDK.rError(errorCode));
             }
 
             infoDocumento.total = aValor.ToString();
 
-            lError = SDK.fLeeDatoDocumento("cPendiente", aValor, 256);
+            errorCode = SDK.fLeeDatoDocumento("cPendiente", aValor, 256);
 
-            if (lError != 0)
+            if (errorCode != 0)
             {
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                throw new Exception(errorCode + "(Pendiente): " + SDK.rError(errorCode));
             }
 
             infoDocumento.pendiente = aValor.ToString();
 
-            return new FunctionReturnedValue(true, infoDocumento);
+            return infoDocumento;
         }
 
-        public static FunctionReturnedValue returnLastDocumentos(int numberOfDocs)
+        public ListOfDocuments returnLastDocumentos(int numberOfDocs)
         {
-            int lError;
             List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
 
-            lError = SDK.fPosUltimoDocumento();
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
-
+            errorCode = SDK.fPosUltimoDocumento();
+            if (errorCode != 0)
+                throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
             for (int i = 1; i <= numberOfDocs; i++)
             {
-                FunctionReturnedValue functionReturnedValue = returnDocumentos();
-                if (!functionReturnedValue.isValid)
-                    return functionReturnedValue;
-
-                lDocumentos.Add(functionReturnedValue.infoDocumento);
+                try
+                {
+                    InfoDocumento infoDocumento = returnDocumentos();
+                    lDocumentos.Add(infoDocumento);
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
 
                 if (i != numberOfDocs)
                 {
-                    lError = SDK.fPosAnteriorDocumento();
-                    if (lError != 0)
+                    errorCode = SDK.fPosAnteriorDocumento();
+                    if (errorCode != 0)
                     {
-                        if (lError == 1)
-                            return new FunctionReturnedValue(true, lDocumentos, true, true);
-                        
-                        return new FunctionReturnedValue(false, SDK.rError(lError));
-                    }
+                        if (errorCode == 1)
+                            return new ListOfDocuments(lDocumentos, true, true);
+                        //return new FunctionReturnedValue(true, lDocumentos, true, true);
 
+                        throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
+                    }
                 }
-                
             }
-            return new FunctionReturnedValue(true, lDocumentos, true, false);
+
+            return new ListOfDocuments(lDocumentos, true, false); //last = true; first: false.
         }
 
-        public static FunctionReturnedValue returnFirstDocumentos(int numberOfDocs)
+        public ListOfDocuments returnFirstDocumentos(int numberOfDocs)
         {
-            int lError;
             List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
 
-            lError = SDK.fPosPrimerDocumento();
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+            errorCode = SDK.fPosPrimerDocumento();
+            if (errorCode != 0)
+                throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
 
             for (int i = 1; i <= numberOfDocs; i++)
             {
-                FunctionReturnedValue functionReturnedValue = returnDocumentos();
-                if (!functionReturnedValue.isValid)
-                    return functionReturnedValue;
-
-                lDocumentos.Add(functionReturnedValue.infoDocumento);
+                try
+                {
+                    InfoDocumento infoDocumento = returnDocumentos();
+                    lDocumentos.Add(infoDocumento);
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
 
                 if (i != numberOfDocs)
                 {
-                    lError = SDK.fPosSiguienteDocumento();
-                    if (lError != 0)
+                    errorCode = SDK.fPosSiguienteDocumento();
+                    if (errorCode != 0)
                     {
-                        if (lError == 2)
-                            return new FunctionReturnedValue(true, lDocumentos, true, true);
-                        return new FunctionReturnedValue(false, SDK.rError(lError));   
-
+                        if (errorCode == 2)
+                            return new ListOfDocuments(lDocumentos, true, true);
+                        //return new FunctionReturnedValue(true, lDocumentos, true, true);
+                        throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
                     }
                 }
             }
-            return new FunctionReturnedValue(true, lDocumentos, false, true);
+
+            return new ListOfDocuments(lDocumentos, false, true); //last: false; first: true.
         }
 
-        public static FunctionReturnedValue returnNextDocumentos(int numberOfDocs)
+        public ListOfDocuments returnNextDocumentos(int numberOfDocs)
         {
-            int lError;
             List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
 
             for (int i = 1; i <= numberOfDocs; i++)
             {
-                lError = SDK.fPosSiguienteDocumento();
-                if (lError != 0)
+                errorCode = SDK.fPosSiguienteDocumento();
+                if (errorCode != 0)
                 {
-                    if (lError == 2)
-                        return new FunctionReturnedValue(true, lDocumentos, true, false);
+                    if (errorCode == 2)
+                        return new ListOfDocuments(lDocumentos, true, false); //last: true; first: false.
 
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
                 }
-                
-                FunctionReturnedValue functionReturnedValue = returnDocumentos();
-                if (!functionReturnedValue.isValid)
-                    return functionReturnedValue;
-
-                lDocumentos.Add(functionReturnedValue.infoDocumento);
+ 
+                try
+                {
+                    InfoDocumento infoDocumento = returnDocumentos();
+                    lDocumentos.Add(infoDocumento);
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
             }
-            lError = SDK.fPosSiguienteDocumento();
 
-            if (lError != 0)
+            if (SDK.fPosSiguienteDocumento() != 0)
             {
-                if (lError == 2)
-                    return new FunctionReturnedValue(true, lDocumentos, true, false);
-                
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                if (errorCode == 2)
+                {
+                    return new ListOfDocuments(lDocumentos, true, true);
+                    //last: true; first: false;
+                }
             }
-            
-            lError = SDK.fPosAnteriorDocumento();
 
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
-
-            return new FunctionReturnedValue(true, lDocumentos, false, false);
-            
+            SDK.fPosAnteriorDocumento();
+            return new ListOfDocuments(lDocumentos, false, false); //last: false; first: false;
         }
 
-        public static FunctionReturnedValue returnPrevDocumentos(int numberOfDocs)
+        public ListOfDocuments returnPrevDocumentos(int numberOfDocs)
         {
-            int lError;
             List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
 
             for (int i = 1; i <= numberOfDocs; i++)
             {
-                lError = SDK.fPosAnteriorDocumento();
-                if (lError != 0)
+                errorCode = SDK.fPosAnteriorDocumento();
+                if (errorCode != 0)
                 {
-                    if (lError == 1)
-                        return new FunctionReturnedValue(true, lDocumentos, false, true);
-                    
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    if (errorCode == 1)
+                        return new ListOfDocuments(lDocumentos, false, true);
+                    ; //last: false; first: true.
+
+                    throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
                 }
-                
-                FunctionReturnedValue functionReturnedValue = returnDocumentos();
-                if (!functionReturnedValue.isValid)
-                    return functionReturnedValue;
 
-                lDocumentos.Add(functionReturnedValue.infoDocumento);
+                try
+                {
+                    InfoDocumento infoDocumento = returnDocumentos();
+                    lDocumentos.Add(infoDocumento);
+                }
+                catch (Exception e)
+                {
+                    throw e;
+                }
             }
             
-            //Validación.
-
-            lError = SDK.fPosAnteriorDocumento();
-
-            if (lError != 0)
+            if (SDK.fPosAnteriorDocumento() != 0)
             {
-                if (lError == 1)
-                    return new FunctionReturnedValue(true, lDocumentos, false, true);
-                
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+                if (errorCode == 2)
+                {
+                    return new ListOfDocuments(lDocumentos, true, false);
+                    //last: true; first: false;
+                }
             }
-            
-            lError = SDK.fPosSiguienteDocumento();
 
-            if (lError != 0)
-                return new FunctionReturnedValue(false, SDK.rError(lError));
+            errorCode = SDK.fPosSiguienteDocumento();
 
-            return new FunctionReturnedValue(true, lDocumentos, false, false);
+            return new ListOfDocuments(lDocumentos, false, false); //last: false; first: false.
         }
 
-        public static FunctionReturnedValue moveForwardsDocumentos(int numberOfDocs)
+        public bool moveForwardsDocumentos(int numberOfDocs)
         {
             int lError;
-            for (int i = 1; i <  numberOfDocs; i++)
+            for (int i = 1; i < numberOfDocs; i++)
             {
                 lError = SDK.fPosSiguienteDocumento();
                 if (lError != 0)
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    return false;
             }
-            return new FunctionReturnedValue(true);
+
+            return true;
         }
-        
-        public static FunctionReturnedValue moveBackwardsDocumentos(int numberOfDocs)
+
+        public bool moveBackwardsDocumentos(int numberOfDocs)
         {
             int lError;
             for (int i = 1; i < numberOfDocs; i++)
             {
                 lError = SDK.fPosAnteriorDocumento();
                 if (lError != 0)
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    return false;
             }
-            return new FunctionReturnedValue(true);
+
+            return true;
         }
     }
 }

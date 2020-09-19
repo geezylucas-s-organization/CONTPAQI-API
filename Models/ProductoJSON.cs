@@ -19,16 +19,18 @@
         public int cControlExistencia { get; set; }
 
         public int cMetodoCosteo { get; set; } // 1 = Costo Promedio en Base a Entradas,
-                                               // 2 = Costo Promedio en Base a Entradas Almacen,
-                                               // 3 = Último costo,
-                                               // 4 = UEPS,
-                                               // 5 = PEPS,
-                                               // 6 = Costo específico,
-                                               // 7 = Costo Estandar
+        // 2 = Costo Promedio en Base a Entradas Almacen,
+        // 3 = Último costo,
+        // 4 = UEPS,
+        // 5 = PEPS,
+        // 6 = Costo específico,
+        // 7 = Costo Estandar
 
         public string cCodigoUnidadBase { get; set; }
 
         public string cCodigoUnidadNoConvertible { get; set; }
+
+        public string cClaveSAT { get; set; } // clave del sat
 
         public float cPrecio1 { get; set; }
         public float cPrecio2 { get; set; }

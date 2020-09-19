@@ -5,7 +5,7 @@ namespace CONTPAQ_API.Services
 {
     public class SDKServices
     {
-        public static FunctionReturnedValue Conectar()
+        public static bool Conectar()
         {
             try
             {
@@ -22,15 +22,13 @@ namespace CONTPAQ_API.Services
                 lError = SDK.fSetNombrePAQ(nombrePAQ);
                 if (lError != 0)
                 {
-                    return new FunctionReturnedValue(false, SDK.rError(lError));
+                    return false;
                 }
 
                 //Paso 3: Indicar la ruta de la empresa a utilzar.
                 lError = SDK.fAbreEmpresa(rutaEmpresa);
 
-                return lError != 0
-                    ? new FunctionReturnedValue(false, SDK.rError(lError))
-                    : new FunctionReturnedValue(true);
+                return lError == 0;
             }
             catch (Exception ex)
             {
@@ -44,11 +42,11 @@ namespace CONTPAQ_API.Services
                     }
                 }
 
-                return new FunctionReturnedValue(false);
+                return false;
             }
         }
 
-        public static FunctionReturnedValue Termina()
+        public static bool Termina()
         {
             try
             {
@@ -57,10 +55,10 @@ namespace CONTPAQ_API.Services
             }
             catch (Exception e)
             {
-                return new FunctionReturnedValue(false, "Error al finalizar uso del SDK: " + e.Message);
+                return false;
             }
 
-            return new FunctionReturnedValue(true);
+            return true;
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using CONTPAQ_API.Services;
 using Microsoft.AspNetCore.Cors;
@@ -10,45 +12,37 @@ namespace CONTPAQ_API.Controllers
     [Route("api/[controller]")]
     public class DocumentoController : Controller
     {
-        private static string prevAction = string.Empty;
+        private string prevAction = string.Empty;
 
         [HttpGet("FillView")] // GET api/Documento/FillView
         public ActionResult FillCreateDocumentView()
         {
-            // FunctionReturnedValue functionReturnedValue = SDKServices.Conectar();
-            //
-            // if (!functionReturnedValue.isValid)
-            //     return StatusCode(500, functionReturnedValue.message);
-
-            FunctionReturnedValue functionReturnedValue = DocumentoServices.returnProductos();
-
-            if (!functionReturnedValue.isValid)
-                return StatusCode(500, functionReturnedValue.message);
-
+            DocumentoServices documentoServices = new DocumentoServices();
             CreateDocumentoView respuesta = new CreateDocumentoView();
-            respuesta.productosYServicios = functionReturnedValue.productos;
+            try
+            {
+                respuesta.productosYServicios = documentoServices.returnProductos();
+                respuesta.clientesYProveedores = documentoServices.returnClientes();
+                respuesta.conceptos = documentoServices.returnConceptos();
+            }
+            // catch (CustomException e)
+            // {
+            //     
+            // }
+            catch (Exception e)
+            {
+                return StatusCode(500, e);
+            }
 
-            functionReturnedValue = DocumentoServices.returnClientes();
-
-            if (!functionReturnedValue.isValid)
-                return StatusCode(500, functionReturnedValue.message);
-
-            respuesta.clientesYProveedores = functionReturnedValue.clientes;
-            functionReturnedValue = DocumentoServices.returnConceptos();
-
-            if (!functionReturnedValue.isValid)
-                return StatusCode(500, functionReturnedValue.message);
-
-            respuesta.conceptos = functionReturnedValue.conceptos;
             string jsonString;
             jsonString = JsonSerializer.Serialize(respuesta);
 
-            //SDKServices.Termina();
             return Ok(jsonString);
         }
 
         [HttpGet("GetDocumentos")] // GET api/Documento/GetDocumentos
-        public ActionResult GetDocumentos([FromQuery (Name = "action")] string action, [FromQuery (Name = "numberOfDocs")] int numberOfDocs)
+        public ActionResult GetDocumentos([FromQuery(Name = "action")] string action,
+            [FromQuery(Name = "numberOfDocs")] int numberOfDocs)
         {
             // FunctionReturnedValue functionReturnedValue = SDKServices.Conectar();
             //
@@ -57,27 +51,28 @@ namespace CONTPAQ_API.Controllers
             //     return StatusCode(500, functionReturnedValue.message);
             // }
 
-            FunctionReturnedValue functionReturnedValue;
+            DocumentoServices documentoServices = new DocumentoServices();
+            ListOfDocuments listOfDocuments;
 
             switch (action)
             {
                 case "last":
-                    functionReturnedValue = DocumentoServices.returnLastDocumentos(numberOfDocs);
+                    listOfDocuments = documentoServices.returnLastDocumentos(numberOfDocs);
                     break;
                 case "first":
-                    functionReturnedValue = DocumentoServices.returnFirstDocumentos(numberOfDocs);
+                    listOfDocuments = documentoServices.returnFirstDocumentos(numberOfDocs);
                     break;
                 case "next":
                     if (prevAction == "prev")
-                        DocumentoServices.moveForwardsDocumentos(numberOfDocs);
+                        documentoServices.moveForwardsDocumentos(numberOfDocs);
 
-                    functionReturnedValue = DocumentoServices.returnNextDocumentos(numberOfDocs);
+                    listOfDocuments = documentoServices.returnNextDocumentos(numberOfDocs);
                     break;
                 case "prev":
                     if (prevAction == "next")
-                        DocumentoServices.moveBackwardsDocumentos(numberOfDocs);
+                        documentoServices.moveBackwardsDocumentos(numberOfDocs);
 
-                    functionReturnedValue = DocumentoServices.returnPrevDocumentos(numberOfDocs);
+                    listOfDocuments = documentoServices.returnPrevDocumentos(numberOfDocs);
                     break;
                 default:
                     return new StatusCodeResult(404);
@@ -85,24 +80,18 @@ namespace CONTPAQ_API.Controllers
 
             prevAction = action;
 
-            ResponseListOfDocuments responseListOfDocuments = new ResponseListOfDocuments(
-                functionReturnedValue.infoDocumentos, functionReturnedValue.isLast, functionReturnedValue.isFirst);
-
             string jsonString;
-            jsonString = JsonSerializer.Serialize(responseListOfDocuments);
+            jsonString = JsonSerializer.Serialize(listOfDocuments);
             return Ok(jsonString);
         }
 
-        [HttpPost] // POST api/Documento/CreateDocumento
+        [HttpPost] // POST api/Documento/
         public ActionResult Post([FromBody] Documento documento)
         {
-            FunctionReturnedValue functionReturnedValue = DocumentoServices.createDocumento(documento);
+            DocumentoServices documentoServices = new DocumentoServices();
+            if (!documentoServices.createDocumento(documento))
+                return StatusCode(500, documentoServices.errorMessage);
 
-            if (!functionReturnedValue.isValid)
-                return StatusCode(500, functionReturnedValue.message);
-
-            //CreaDoctoPago();
-            //SDKServices.Termina();
             return StatusCode(201);
         }
     }

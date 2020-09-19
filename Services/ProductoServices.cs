@@ -24,6 +24,11 @@ namespace CONTPAQ_API.Services
                 return false;
             }
 
+            // TODO: I don't know if your logic is like this 
+            errorCode = SDK.fEditaProducto();
+            errorCode = SDK.fSetDatoProducto("CCLAVESAT", producto.cClaveSAT);
+            errorCode = SDK.fGuardaProducto();
+
             return true;
         }
 
