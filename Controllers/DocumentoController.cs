@@ -36,7 +36,8 @@ namespace CONTPAQ_API.Controllers
 
             string jsonString;
             jsonString = JsonSerializer.Serialize(respuesta);
-
+            PlantillasServices.func();
+            
             return Ok(jsonString);
         }
 
@@ -82,6 +83,7 @@ namespace CONTPAQ_API.Controllers
 
             string jsonString;
             jsonString = JsonSerializer.Serialize(listOfDocuments);
+            
             return Ok(jsonString);
         }
 

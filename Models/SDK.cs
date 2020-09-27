@@ -494,6 +494,9 @@ namespace CONTPAQ_API
 
         [DllImport("MGWServicios.DLL")]
         public static extern int fEditaCteProv();
+        [DllImport("MGWServicios.DLL")]
+
+        public static extern int fPosUltimoCteProv();
 
         [DllImport("MGWServicios.DLL")]
         public static extern int fSetDatoCteProv(string aCampo, string aValor);

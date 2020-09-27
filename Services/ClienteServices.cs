@@ -20,6 +20,15 @@ namespace CONTPAQ_API.Services
                 return false;
             }
 
+            errorCode = SDK.fPosUltimoCteProv();
+
+            if (errorCode == 0)
+            {
+                errorCode = SDK.fEditaCteProv();
+                errorCode = SDK.fSetDatoCteProv("CIDMONEDA", cliente.cNombreMoneda);
+                errorCode = SDK.fGuardaCteProv();
+            }
+
             return true;
         }
 

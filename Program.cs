@@ -15,6 +15,8 @@ namespace CONTPAQ_API
         public static void Main(string[] args)
         {
             SDKServices.Conectar();
+            //PlantillasServices.initializeHangfire();
+            //PlantillasServices.func();
             CreateHostBuilder(args).Build().Run();
         }
 

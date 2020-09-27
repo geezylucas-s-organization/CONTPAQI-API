@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Hangfire;
 
 namespace CONTPAQ_API
 {
@@ -25,6 +26,8 @@ namespace CONTPAQ_API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddHangfire(x => x.UseSqlServerStorage(@"Data Source=DESKTOP-0IF7KH8\COMPAC;Initial Catalog=HangfireDB;User ID=sa;Password=Supervisor1."));
+            services.AddHangfireServer();
             services.AddCors(options =>
             {
                 options.AddDefaultPolicy(builder =>
@@ -46,6 +49,8 @@ namespace CONTPAQ_API
             }
 
             // app.UseHttpsRedirection();
+            
+            app.UseHangfireDashboard();
 
             app.UseRouting();
 

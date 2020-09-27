@@ -305,6 +305,11 @@ namespace CONTPAQ_API.Services
 
                 codigoConcepto = Convert.ToInt32(aValor.ToString());
 
+                if (codigoConcepto != 5)
+                {    
+                    continue;
+                }
+
                 errorCode = SDK.fLeeDatoConceptoDocto("cNombreConcepto", aValor, 256);
 
                 if (errorCode != 0)
@@ -325,10 +330,13 @@ namespace CONTPAQ_API.Services
                 noFolio++;
 
                 lConcepto.Add(new Concepto(codigoConcepto, nombreConcepto, noFolio));
+                break;
 
                 //errorCode = SDK.fPosSiguienteConceptoDocto();
             }
 
+            
+            
             return lConcepto;
         }
 
