@@ -1,10 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Globalization;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using CONTPAQ_API.Models;
+using CONTPAQ_API.Models.DB;
 using Hangfire;
+using CONTPAQ_API.Services;
 using Hangfire.SqlServer;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -18,7 +24,7 @@ namespace CONTPAQ_API.Services
 
         public static void func()
         {
-            RecurringJob.AddOrUpdate(() => checkForPlantillas(), Cron.Minutely());
+            RecurringJob.AddOrUpdate(() => checkForPlantillas(), Cron.Daily());
 
             using (var server = new BackgroundJobServer())
             {
@@ -26,49 +32,122 @@ namespace CONTPAQ_API.Services
             }
         }
 
-        public static void checkForPlantillas()
+        public static bool addPlantilla(Documento documento)
         {
-            string connString =
-                @"Data Source=DESKTOP-0IF7KH8\COMPAC;Initial Catalog=Plantillas;User ID=sa;Password=Supervisor1.";
-            string query = "SELECT * FROM Documentos";
-            List<Plantillas> plantillas = new List<Plantillas>();
-            SqlConnection connection = new SqlConnection(connString);
-            SqlCommand command = new SqlCommand(query, connection);
-            
-            
-            command.Connection.Open();
-            using (SqlDataReader reader = command.ExecuteReader())
+            using (var db = new PlantillasContext())
             {
-                while (reader.Read())
+                int noPlantillas = db.Documentos.Count();
+                int nextId;
+
+                if (noPlantillas != 0)
                 {
-                    plantillas.Add(new Plantillas
-                    {
-                        id = Convert.ToInt32(reader.GetInt32(0)),
-                        jsonFactura = reader.GetString(1),
-                        ultimaVezFacturada = reader.GetDateTime(2),
-                        proximaFactura = reader.GetDateTime(3),
-                        estatus = reader.GetBoolean(4)
-                    });
+                    nextId = db.Documentos.Max(x => x.Documentoid) + 1;
+                }
+                else
+                {
+                    nextId = 1;
+                }
+                
+                var factura = new Documentos
+                {
+                    Documentoid = nextId,
+                    Estatus = false
+                };
+                try
+                {
+                    db.Documentos.Add(factura);
+                    db.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    throw new Exception(e.Message);
                 }
 
-
-                foreach (var plantilla in plantillas)
+                DateTime fechaCabecera = DateTime.ParseExact(documento.cabecera.fecha,"MM/dd/yyyy",CultureInfo.InvariantCulture);
+                
+                var cabecera = new Cabeceras
                 {
-                    if (!plantilla.estatus) continue;
-                    if (plantilla.proximaFactura.Date == DateTime.Today)
-                    {
-                        int hora = plantilla.proximaFactura.Hour;
-                        DocumentoServices documentoServices = new DocumentoServices();
-                        Documento documento = new Documento();
-                        
-                        
+                    Documentoid = factura.Documentoid,
+                    NumMoneda = documento.cabecera.numMoneda,
+                    Serie = documento.cabecera.serie.ToString(),
+                    TipoCambio = documento.cabecera.tipoCambio,
+                    CodConcepto = documento.cabecera.codConcepto,
+                    CodigoCteProv = documento.cabecera.codigoCteProv
+                };
 
-                        BackgroundJob.Schedule(() => documentoServices.createDocumento(documento),
+                db.Cabeceras.Add(cabecera);
+
+                for (int i = 1; i < documento.movimientos.Count; i++)
+                {
+                    var movimientodb = new Movimientos
+                    {
+                        Documentoid = factura.Documentoid,
+                        NumeroMovimiento = i,
+                        CodAlmacen = documento.movimientos[i].codAlmacen,
+                        CodProducto = documento.movimientos[i].codProducto,
+                        Precio = documento.movimientos[i].precio,
+                        Unidades = documento.movimientos[i].unidades
+                    };
+                    db.Movimientos.Add(movimientodb);
+                }
+                
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch (Exception e)
+                {
+                    throw new Exception(e.Message);
+                }
+                
+            }
+
+            return true;
+        }
+
+        public static void checkForPlantillas()
+        {
+            using (var db = new PlantillasContext())
+            {
+                var documentosPlantillas = db.Documentos.ToList();
+                foreach (var documento in documentosPlantillas)
+                {
+                    if (!documento.Estatus) continue;
+                    if (documento.ProximaFactura == DateTime.Today)
+                    {
+                        int hora = documento.ProximaFactura.Value.Hour;
+                        DocumentoServices documentoServices = new DocumentoServices();
+                        var cabecera = db.Cabeceras.FirstOrDefault(x => x.Documentoid == documento.Documentoid);
+                        var movimiento = db.Movimientos.Where(x => x.Documentoid == documento.Documentoid).ToList();
+
+                        Documento factura = new Documento
+                        {
+                            cabecera = new Cabecera
+                            {
+                                numMoneda = cabecera.NumMoneda,
+                                serie = new StringBuilder(cabecera.Serie),
+                                tipoCambio = cabecera.TipoCambio,
+                                codConcepto = cabecera.CodConcepto,
+                                codigoCteProv = cabecera.CodigoCteProv
+                            },
+                            movimientos = new List<Movimiento>()
+                        };
+
+                        movimiento.ForEach(x => factura.movimientos.Add(new Movimiento
+                        {
+                            codAlmacen = x.CodAlmacen,
+                            codProducto = x.CodProducto,
+                            precio = x.Precio,
+                            unidades = x.Unidades
+                        }));
+
+                        factura.docEnPlantiila.isPlantilla = true;
+                        factura.docEnPlantiila.idPlantilla = documento.Documentoid;
+
+                        BackgroundJob.Schedule(() => documentoServices.createDocumento(factura),
                             TimeSpan.FromHours(hora));
                     }
                 }
-                
-                command.Connection.Close();
             }
         }
     }

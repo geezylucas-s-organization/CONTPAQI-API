@@ -1,8 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Policy;
 using System.Text;
+using CONTPAQ_API.Models;
+using CONTPAQ_API.Models.DB;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Razor;
 
 namespace CONTPAQ_API.Services
 {
@@ -10,50 +15,79 @@ namespace CONTPAQ_API.Services
     {
         public bool createDocumento(Documento documento)
         {
-            StringBuilder serie = new StringBuilder("");
-            int idDocto = 0;
-            int idMovto = 0;
-            SDK.tDocumento lDocto = new SDK.tDocumento();
-            SDK.tMovimiento lMovimiento = new SDK.tMovimiento();
-
-            //Paso 1: Conseguir el folio del documento a realizar.
-            errorCode = SDK.fSiguienteFolio(documento.cabecera.codConcepto, documento.cabecera.serie,
-                ref documento.cabecera.folio);
-            if (errorCode != 0)
+            if (documento.timbrar)
             {
-                errorMessage = SDK.rError(errorCode);
-                return false;
-            }
+                StringBuilder serie = new StringBuilder("");
+                int idDocto = 0;
+                int idMovto = 0;
+                SDK.tDocumento lDocto = new SDK.tDocumento();
+                SDK.tMovimiento lMovimiento = new SDK.tMovimiento();
 
-            //Cabecera
-            lDocto.aCodConcepto = documento.cabecera.codConcepto;
-            lDocto.aCodigoCteProv = documento.cabecera.codigoCteProv;
-            lDocto.aFecha = documento.cabecera.fecha;
-            lDocto.aFolio = documento.cabecera.folio;
-            lDocto.aNumMoneda = documento.cabecera.numMoneda;
-            lDocto.aSerie = documento.cabecera.serie.ToString();
-            lDocto.aTipoCambio = documento.cabecera.tipoCambio;
+                //Paso 1: Conseguir el folio del documento a realizar.
+                errorCode = SDK.fSiguienteFolio(documento.cabecera.codConcepto, documento.cabecera.serie,
+                    ref documento.cabecera.folio);
+                if (errorCode != 0)
+                {
+                    errorMessage = SDK.rError(errorCode);
+                    return false;
+                }
+
+                //Cabecera
+                lDocto.aCodConcepto = documento.cabecera.codConcepto;
+                lDocto.aCodigoCteProv = documento.cabecera.codigoCteProv;
+                lDocto.aFecha = DateTime.Now.ToString("MM/dd/yyyy");
+                lDocto.aFolio = documento.cabecera.folio;
+                lDocto.aNumMoneda = documento.cabecera.numMoneda;
+                lDocto.aSerie = documento.cabecera.serie.ToString();
+                lDocto.aTipoCambio = documento.cabecera.tipoCambio;
 
 
-            //Paso 2: Dar de alta el documento con su cabecera.
-            errorCode = SDK.fAltaDocumento(ref idDocto, ref lDocto);
+                //Paso 2: Dar de alta el documento con su cabecera.
+                errorCode = SDK.fAltaDocumento(ref idDocto, ref lDocto);
 
-            if (errorCode != 0)
-            {
-                errorMessage = SDK.rError(errorCode);
-                return false;
-            }
+                if (errorCode != 0)
+                {
+                    errorMessage = SDK.rError(errorCode);
+                    return false;
+                }
 
-            //Paso 3: Se agregan los movimientos al documento.
-            foreach (var item in documento.movimientos)
-            {
-                lMovimiento.aCodAlmacen = item.codAlmacen;
-                lMovimiento.aCodProdSer = item.codProducto;
-                lMovimiento.aPrecio = item.precio;
-                lMovimiento.aUnidades = item.unidades; //Una compra
+                //Paso 3: Se agregan los movimientos al documento.
+                foreach (var item in documento.movimientos)
+                {
+                    lMovimiento.aCodAlmacen = item.codAlmacen;
+                    lMovimiento.aCodProdSer = item.codProducto;
+                    lMovimiento.aPrecio = item.precio;
+                    lMovimiento.aUnidades = item.unidades; //Una compra
 
-                //Se da de alta un movimiento.
-                errorCode = SDK.fAltaMovimiento(idDocto, ref idMovto, ref lMovimiento);
+                    //Se da de alta un movimiento.
+                    errorCode = SDK.fAltaMovimiento(idDocto, ref idMovto, ref lMovimiento);
+                    if (errorCode != 0)
+                    {
+                        errorMessage = SDK.rError(errorCode);
+                        return false;
+                    }
+                }
+
+                //Paso 4: Se timbra el documento
+                errorCode = SDK.fEmitirDocumento(documento.cabecera.codConcepto,
+                    documento.cabecera.serie.ToString(), documento.cabecera.folio, "12345678a", "");
+                if (errorCode != 0)
+                {
+                    errorMessage = SDK.rError(errorCode);
+                    return false;
+                }
+                //Paso 5: Se exporta a XML o PDF
+
+                errorCode = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
+                    documento.cabecera.serie.ToString(), documento.cabecera.folio, 0, "");
+                if (errorCode != 0)
+                {
+                    errorMessage = SDK.rError(errorCode);
+                    return false;
+                }
+
+                errorCode = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
+                    documento.cabecera.serie.ToString(), documento.cabecera.folio, 1, "");
                 if (errorCode != 0)
                 {
                     errorMessage = SDK.rError(errorCode);
@@ -61,30 +95,32 @@ namespace CONTPAQ_API.Services
                 }
             }
 
-            //Paso 4: Se timbra el documento
-            errorCode = SDK.fEmitirDocumento(documento.cabecera.codConcepto,
-                documento.cabecera.serie.ToString(), documento.cabecera.folio, "12345678a", "");
-            if (errorCode != 0)
+            if (documento.guardarPlantilla)
             {
-                errorMessage = SDK.rError(errorCode);
-                return false;
-            }
-            //Paso 5: Se exporta a XML o PDF
-
-            errorCode = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
-                documento.cabecera.serie.ToString(), documento.cabecera.folio, 0, "");
-            if (errorCode != 0)
-            {
-                errorMessage = SDK.rError(errorCode);
-                return false;
+                try
+                {
+                    PlantillasServices.addPlantilla(documento);
+                }
+                catch (Exception e)
+                {
+                    errorMessage = e.Message;
+                    return false;
+                }
             }
 
-            errorCode = SDK.fEntregEnDiscoXML(documento.cabecera.codConcepto,
-                documento.cabecera.serie.ToString(), documento.cabecera.folio, 1, "");
-            if (errorCode != 0)
+            if (documento.docEnPlantiila.isPlantilla)
             {
-                errorMessage = SDK.rError(errorCode);
-                return false;
+                PlantillasContext db = new PlantillasContext();
+                Documentos doc = db.Documentos.FirstOrDefault(x => x.Documentoid == documento.docEnPlantiila.idPlantilla);
+                try
+                {
+                    doc.ProximaFactura.Value.AddDays(doc.PeriodoDias.Value);
+                }
+                catch (Exception e)
+                {
+                    errorMessage = e.Message;
+                    return false;
+                }
             }
 
             return true;
@@ -306,7 +342,7 @@ namespace CONTPAQ_API.Services
                 codigoConcepto = Convert.ToInt32(aValor.ToString());
 
                 if (codigoConcepto != 5)
-                {    
+                {
                     continue;
                 }
 
@@ -335,8 +371,7 @@ namespace CONTPAQ_API.Services
                 //errorCode = SDK.fPosSiguienteConceptoDocto();
             }
 
-            
-            
+
             return lConcepto;
         }
 
@@ -511,7 +546,7 @@ namespace CONTPAQ_API.Services
 
                     throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
                 }
- 
+
                 try
                 {
                     InfoDocumento infoDocumento = returnDocumentos();
@@ -562,7 +597,7 @@ namespace CONTPAQ_API.Services
                     throw e;
                 }
             }
-            
+
             if (SDK.fPosAnteriorDocumento() != 0)
             {
                 if (errorCode == 2)

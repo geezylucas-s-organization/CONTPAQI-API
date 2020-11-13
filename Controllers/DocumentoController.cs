@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+//using CONTPAQ_API.Models;
 using CONTPAQ_API.Services;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace CONTPAQ_API.Controllers
 {
@@ -25,10 +27,6 @@ namespace CONTPAQ_API.Controllers
                 respuesta.clientesYProveedores = documentoServices.returnClientes();
                 respuesta.conceptos = documentoServices.returnConceptos();
             }
-            // catch (CustomException e)
-            // {
-            //     
-            // }
             catch (Exception e)
             {
                 return StatusCode(500, e);
@@ -36,7 +34,7 @@ namespace CONTPAQ_API.Controllers
 
             string jsonString;
             jsonString = JsonSerializer.Serialize(respuesta);
-            PlantillasServices.func();
+            //PlantillasServices.func();
             
             return Ok(jsonString);
         }
@@ -96,5 +94,7 @@ namespace CONTPAQ_API.Controllers
 
             return StatusCode(201);
         }
+
+
     }
 }

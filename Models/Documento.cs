@@ -7,8 +7,17 @@ namespace CONTPAQ_API
     {
         public Cabecera cabecera { get; set; }
         public List<Movimiento> movimientos { get; set; }
+        public bool guardarPlantilla { get; set; }
+        public bool timbrar { get; set; }
+        public DocEnPlantilla docEnPlantiila { get; set; }
     }
 
+    public class DocEnPlantilla
+    {    
+        public bool isPlantilla { get; set; }
+        public int idPlantilla { get; set; }
+    }
+    
     public class Cabecera
     {
         public string codConcepto { get; set; }
@@ -24,7 +33,7 @@ namespace CONTPAQ_API
     {
         public string codAlmacen = "1";
         public string codProducto { get; set; }
-        public int precio { get; set; }
+        public double precio { get; set; }
         public int unidades { get; set; }
     }
 
