@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Data.SqlClient;
 
 namespace CONTPAQ_API.Services
 {
@@ -32,9 +34,60 @@ namespace CONTPAQ_API.Services
             return true;
         }
 
-        public List<Producto> returnAll()
+        public List<Producto> ReturnProducts(int pageNumber, int rows)
         {
-            throw new System.NotImplementedException();
+            List<Producto> lProductos = new List<Producto>();
+            string query =
+                "SELECT CIDPRODUCTO, CCODIGOPRODUCTO, CNOMBREPRODUCTO, CPRECIO1, CPRECIO2, CPRECIO3, CPRECIO4, CPRECIO5, CPRECIO6,CPRECIO7, CPRECIO8, CPRECIO9, CPRECIO10 " +
+                "FROM [adpruebas_de_timbrado].[dbo].[admProductos] " +
+                "ORDER BY CIDPRODUCTO " +
+                "OFFSET (@PageNumber-1)*@RowsOfPage ROWS " +
+                "FETCH NEXT @RowsOfPage ROWS ONLY;";
+
+
+            string connString = DatabaseServices.GetConnString();
+
+            using (SqlConnection connection = new SqlConnection(connString))
+            {
+                SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.Add("@PageNumber", SqlDbType.Int).Value = pageNumber;
+                command.Parameters.Add("@RowsOfPage", SqlDbType.Int).Value = rows;
+                
+                connection.Open();
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        List<double> lPrecios = new List<double>();
+
+                        for (int i = 4; i < 14; i++)
+                        {
+                            double precio = reader.GetDouble(i);
+                            if (precio == 0)
+                            {
+                                break;
+                            }
+                            
+                            lPrecios.Add(precio);
+                        }
+
+                        Producto producto;
+
+                        if (lPrecios.Count > 0)
+                        {
+                            producto = new Producto(reader.GetString(1), reader.GetString(2), lPrecios);
+                        }
+                        else
+                        {
+                            producto = new Producto(reader.GetString(1), reader.GetString(2));
+                        }
+
+                        lProductos.Add(producto);
+                    }
+                }
+
+                return lProductos;
+            }
         }
 
         private SDK.tProducto returnProductoStruct(ProductoJSON producto)

@@ -1,6 +1,9 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Generic;
+using System.Data;
+using System.Runtime.InteropServices;
 using System.Text;
 using CONTPAQ_API.Controllers;
+using Microsoft.Data.SqlClient;
 
 namespace CONTPAQ_API.Services
 {
@@ -30,6 +33,39 @@ namespace CONTPAQ_API.Services
             }
 
             return true;
+        }
+
+        public List<Cliente> returnClientes(int pageNumber, int rows)
+        {
+            List<Cliente> lCliente = new List<Cliente>();
+            
+            string query =
+                "SELECT CCODIGOCLIENTE, CRAZONSOCIAL, CRFC, CIDMONEDA FROM [adpruebas_de_timbrado].[dbo].[admClientes] " +
+                "ORDER BY CIDCLIENTEPROVEEDOR " +
+                "OFFSET (@PageNumber-1)*@RowsOfPage ROWS " +
+                "FETCH NEXT @RowsOfPage ROWS ONLY";
+
+            string connString = DatabaseServices.GetConnString();
+
+            using (SqlConnection connection = new SqlConnection(connString))
+            {
+                SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.Add("@PageNumber", SqlDbType.Int).Value = pageNumber;
+                command.Parameters.Add("@RowsOfPage", SqlDbType.Int).Value = rows;
+                
+                connection.Open();
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Cliente cliente = new Cliente(reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                            reader.GetInt32(3));
+                        lCliente.Add(cliente);
+                    }
+                }
+
+                return lCliente;
+            }
         }
 
         private SDK.tCteProv returnClienteStruct(ClienteJSON cliente)

@@ -35,53 +35,20 @@ namespace CONTPAQ_API.Controllers
             string jsonString;
             jsonString = JsonSerializer.Serialize(respuesta);
             //PlantillasServices.func();
-            
+
             return Ok(jsonString);
         }
 
         [HttpGet("GetDocumentos")] // GET api/Documento/GetDocumentos
-        public ActionResult GetDocumentos([FromQuery(Name = "action")] string action,
-            [FromQuery(Name = "numberOfDocs")] int numberOfDocs)
+        public ActionResult GetDocumentos([FromQuery(Name = "PageNumber")] int PageNumber,
+            [FromQuery(Name = "Rows")] int Rows)
         {
-            // FunctionReturnedValue functionReturnedValue = SDKServices.Conectar();
-            //
-            // if (!functionReturnedValue.isValid)
-            // {
-            //     return StatusCode(500, functionReturnedValue.message);
-            // }
-
             DocumentoServices documentoServices = new DocumentoServices();
-            ListOfDocuments listOfDocuments;
-
-            switch (action)
-            {
-                case "last":
-                    listOfDocuments = documentoServices.returnLastDocumentos(numberOfDocs);
-                    break;
-                case "first":
-                    listOfDocuments = documentoServices.returnFirstDocumentos(numberOfDocs);
-                    break;
-                case "next":
-                    if (prevAction == "prev")
-                        documentoServices.moveForwardsDocumentos(numberOfDocs);
-
-                    listOfDocuments = documentoServices.returnNextDocumentos(numberOfDocs);
-                    break;
-                case "prev":
-                    if (prevAction == "next")
-                        documentoServices.moveBackwardsDocumentos(numberOfDocs);
-
-                    listOfDocuments = documentoServices.returnPrevDocumentos(numberOfDocs);
-                    break;
-                default:
-                    return new StatusCodeResult(404);
-            }
-
-            prevAction = action;
+            List<InfoDocumento> listOfDocuments = documentoServices.returnDocumentos(PageNumber, Rows);
 
             string jsonString;
             jsonString = JsonSerializer.Serialize(listOfDocuments);
-            
+
             return Ok(jsonString);
         }
 
@@ -94,7 +61,5 @@ namespace CONTPAQ_API.Controllers
 
             return StatusCode(201);
         }
-
-
     }
 }

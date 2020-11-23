@@ -1,6 +1,8 @@
-﻿using CONTPAQ_API.Services;
+﻿using System.Collections.Generic;
+using CONTPAQ_API.Services;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace CONTPAQ_API.Controllers
 {
@@ -24,6 +26,18 @@ namespace CONTPAQ_API.Controllers
             }
 
             return StatusCode(500, clienteServices.errorMessage);
+        }
+
+        [HttpGet("GetClientes")] // post api/Cliente/GetClientes
+        public ActionResult getClientes([FromQuery(Name = "PageNumber")] int PageNumber,
+            [FromQuery(Name = "Rows")] int Rows)
+        {
+            ClienteServices clienteServices = new ClienteServices();
+            List<Cliente> lCliente = clienteServices.returnClientes(PageNumber, Rows);
+            
+            string jsonString;
+            jsonString = JsonSerializer.Serialize(lCliente);
+            return Ok(jsonString);
         }
     }
 }

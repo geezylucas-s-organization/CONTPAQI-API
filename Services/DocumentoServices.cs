@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
 using System.Linq;
 using System.Security.Policy;
 using System.Text;
+using CONTPAQ_API.Controllers;
 using CONTPAQ_API.Models;
 using CONTPAQ_API.Models.DB;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace CONTPAQ_API.Services
 {
@@ -111,7 +116,8 @@ namespace CONTPAQ_API.Services
             if (documento.docEnPlantiila.isPlantilla)
             {
                 PlantillasContext db = new PlantillasContext();
-                Documentos doc = db.Documentos.FirstOrDefault(x => x.Documentoid == documento.docEnPlantiila.idPlantilla);
+                Documentos doc =
+                    db.Documentos.FirstOrDefault(x => x.Documentoid == documento.docEnPlantiila.idPlantilla);
                 try
                 {
                     doc.ProximaFactura.Value.AddDays(doc.PeriodoDias.Value);
@@ -185,457 +191,155 @@ namespace CONTPAQ_API.Services
         public List<Producto> returnProductos()
         {
             List<Producto> lProductos = new List<Producto>();
-            StringBuilder aValor = new StringBuilder();
+            string query =
+                "SELECT CIDPRODUCTO, CCODIGOPRODUCTO, CNOMBREPRODUCTO, CPRECIO1, CPRECIO2, CPRECIO3, CPRECIO4, " +
+                "CPRECIO5, CPRECIO6,CPRECIO7, CPRECIO8, CPRECIO9, CPRECIO10 FROM [adpruebas_de_timbrado].[dbo].[admProductos]";
 
-            errorCode = SDK.fPosPrimerProducto();
+            string connString = DatabaseServices.GetConnString();
 
-            if (errorCode != 0)
+            using (SqlConnection connection = new SqlConnection(connString))
             {
+                SqlCommand command = new SqlCommand(query, connection);
+                connection.Open();
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        if (reader.GetInt32(0) == 0 && reader.GetString(1).Trim() == "(Ninguno)")
+                        {
+                            reader.Read();
+                        }
+
+                        List<double> lPrecios = new List<double>();
+
+                        for (int i = 4; i < 14; i++)
+                        {
+                            double precio = reader.GetDouble(i);
+                            if (precio == 0)
+                            {
+                                break;
+                            }
+
+                            lPrecios.Add(precio);
+                        }
+
+                        Producto producto;
+
+                        if (lPrecios.Count > 0)
+                        {
+                            producto = new Producto(reader.GetString(1), reader.GetString(2), lPrecios);
+                        }
+                        else
+                        {
+                            producto = new Producto(reader.GetString(1), reader.GetString(2));
+                        }
+
+                        lProductos.Add(producto);
+                    }
+                }
+
                 return lProductos;
             }
-
-            while (SDK.fPosSiguienteProducto() == 0)
-            {
-                List<double> lPrecios = new List<double>();
-                string codigoProducto, nombreProducto;
-
-                // if (errorCode != 0)
-                // {
-                //     return lProductos;
-                // }
-
-                errorCode = SDK.fLeeDatoProducto("cCodigoProducto", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    return lProductos;
-                }
-
-                codigoProducto = aValor.ToString();
-
-                errorCode = SDK.fLeeDatoProducto("cNombreProducto", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    return lProductos;
-                }
-
-                nombreProducto = aValor.ToString();
-
-                for (int i = 1; i <= 10; i++)
-                {
-                    errorCode = SDK.fLeeDatoProducto("cPrecio" + i, aValor, 256);
-                    if (errorCode != 0)
-                    {
-                        return lProductos;
-                    }
-
-                    if (Convert.ToDouble(aValor.ToString()) == 0)
-                    {
-                        break;
-                    }
-
-                    lPrecios.Add(Convert.ToDouble(aValor.ToString()));
-                }
-
-                if (lPrecios.Count == 0)
-                {
-                    lProductos.Add(new Producto(codigoProducto, nombreProducto));
-                }
-                else
-                {
-                    lProductos.Add(new Producto(codigoProducto, nombreProducto, lPrecios));
-                }
-            }
-
-            return lProductos;
         }
 
         public List<Cliente> returnClientes()
         {
             List<Cliente> lCliente = new List<Cliente>();
-            StringBuilder aValor = new StringBuilder();
+            string query =
+                "SELECT CCODIGOCLIENTE, CRAZONSOCIAL, CRFC, CIDMONEDA FROM [adpruebas_de_timbrado].[dbo].[admClientes]";
 
-            errorCode = SDK.fPosPrimerCteProv();
+            string connString = DatabaseServices.GetConnString();
 
-            if (errorCode != 0)
+            using (SqlConnection connection = new SqlConnection(connString))
             {
-                throw new Exception(errorCode + ": " + SDK.rError(errorCode));
+                SqlCommand command = new SqlCommand(query, connection);
+                connection.Open();
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        if (reader.GetString(0).Trim() == "(Ninguno)" && reader.GetString(1).Trim() == "(Ninguno)")
+                        {
+                            reader.Read();
+                        }
+
+                        Cliente cliente = new Cliente(reader.GetString(0), reader.GetString(1), reader.GetString(2),
+                            reader.GetInt32(3));
+                        lCliente.Add(cliente);
+                    }
+                }
+
+                return lCliente;
             }
-
-            while (SDK.fPosSiguienteCteProv() == 0)
-            {
-                //errorCode = SDK.fPosSiguienteCteProv();
-                string codigoCliente, razonSocial, rfc;
-                int moneda;
-
-                // if (errorCode != 0)
-                // {
-                //     break;
-                // }
-
-                errorCode = SDK.fLeeDatoCteProv("cCodigoCliente", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    throw new Exception(errorCode + "(CodigoCliente): " + SDK.rError(errorCode));
-                }
-
-                codigoCliente = aValor.ToString();
-
-                errorCode = SDK.fLeeDatoCteProv("cRazonSocial", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    throw new Exception(errorCode + "(RazonSocial): " + SDK.rError(errorCode));
-                }
-
-                razonSocial = aValor.ToString();
-
-                errorCode = SDK.fLeeDatoCteProv("cRFC", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    throw new Exception(errorCode + "(RFC): " + SDK.rError(errorCode));
-                }
-
-                rfc = aValor.ToString();
-
-                errorCode = SDK.fLeeDatoCteProv("cIDMoneda", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    throw new Exception(errorCode + "(IDMoneda): " + SDK.rError(errorCode));
-                }
-
-                moneda = Convert.ToInt32(aValor.ToString());
-
-                lCliente.Add(new Cliente(codigoCliente, razonSocial, rfc, moneda));
-            }
-
-            return lCliente;
         }
 
         public List<Concepto> returnConceptos()
         {
             List<Concepto> lConcepto = new List<Concepto>();
-            StringBuilder aValor = new StringBuilder();
+            string query =
+                "SELECT CCODIGOCONCEPTO, CNOMBRECONCEPTO, CNOFOLIO FROM [adpruebas_de_timbrado].[dbo].[admConceptos] WHERE CCODIGOCONCEPTO = 5;";
 
-            errorCode = SDK.fPosPrimerConceptoDocto();
+            string connString = DatabaseServices.GetConnString();
 
-            if (errorCode != 0)
+            using (SqlConnection connection = new SqlConnection(connString))
             {
+                SqlCommand command = new SqlCommand(query, connection);
+                connection.Open();
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Concepto concepto = new Concepto(Convert.ToInt32(reader.GetString(0)), reader.GetString(1),
+                            Convert.ToInt32(reader.GetDouble(2)));
+                        lConcepto.Add(concepto);
+                    }
+                }
+
                 return lConcepto;
             }
-
-            while (SDK.fPosSiguienteConceptoDocto() == 0)
-            {
-                string nombreConcepto;
-                int noFolio, codigoConcepto;
-                errorCode = SDK.fLeeDatoConceptoDocto("cCodigoConcepto", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    throw new Exception(errorCode + "(CodigoConcepto): " + SDK.rError(errorCode));
-                }
-
-                codigoConcepto = Convert.ToInt32(aValor.ToString());
-
-                if (codigoConcepto != 5)
-                {
-                    continue;
-                }
-
-                errorCode = SDK.fLeeDatoConceptoDocto("cNombreConcepto", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    throw new Exception(errorCode + "(NombreConcepto): " + SDK.rError(errorCode));
-                }
-
-                nombreConcepto = aValor.ToString();
-
-                errorCode = SDK.fLeeDatoConceptoDocto("cNoFolio", aValor, 256);
-
-                if (errorCode != 0)
-                {
-                    throw new Exception(errorCode + "(NoFolio): " + SDK.rError(errorCode));
-                }
-
-                noFolio = (int) Convert.ToDouble(aValor.ToString());
-                noFolio++;
-
-                lConcepto.Add(new Concepto(codigoConcepto, nombreConcepto, noFolio));
-                break;
-
-                //errorCode = SDK.fPosSiguienteConceptoDocto();
-            }
-
-
-            return lConcepto;
         }
 
-        private InfoDocumento returnDocumentos()
+        public List<InfoDocumento> returnDocumentos(int pageNumber, int rows)
         {
-            StringBuilder aValor = new StringBuilder();
-            InfoDocumento infoDocumento = new InfoDocumento();
-            errorCode = SDK.fLeeDatoDocumento("cIdConceptoDocumento", aValor, 256);
+            string query =
+                "SELECT CNOMBRECONCEPTO,CCODIGOCONCEPTO, CFOLIO, CSERIEDOCUMENTO, CFECHA, CRAZONSOCIAL, CTOTAL, CPENDIENTE " +
+                "FROM [adpruebas_de_timbrado].[dbo].[admDocumentos] " +
+                "INNER JOIN  [adpruebas_de_timbrado].[dbo].[admConceptos] " +
+                "ON admDocumentos.CIDCONCEPTODOCUMENTO = admConceptos.CIDCONCEPTODOCUMENTO " +
+                "ORDER BY CIDDOCUMENTO " +
+                "OFFSET ( @PageNumber - 1) * @RowsOfPage ROWS " +
+                "FETCH NEXT @RowsOfPage ROWS ONLY";
 
-            if (errorCode != 0)
-                throw new Exception(errorCode + "(IdConcepto): " + SDK.rError(errorCode));
+            string connString = DatabaseServices.GetConnString();
 
-            errorCode = SDK.fBuscaConceptoDocto(aValor.ToString());
-
-            if (errorCode != 0)
-                throw new Exception(errorCode + "(Concepto): " + SDK.rError(errorCode));
-
-            SDK.fLeeDatoConceptoDocto("cCodigoConcepto", aValor, 256);
-
-            if (errorCode != 0)
-                throw new Exception(errorCode + "(CodigoConcepto): " + SDK.rError(errorCode));
-
-            infoDocumento.codConcepto = aValor.ToString();
-
-            SDK.fLeeDatoConceptoDocto("cNombreConcepto", aValor, 256);
-
-            if (errorCode != 0)
-                throw new Exception(errorCode + "(NombreConcepto): " + SDK.rError(errorCode));
-
-            infoDocumento.nombreConcepto = aValor.ToString();
-
-            errorCode = SDK.fLeeDatoDocumento("cFolio", aValor, 256);
-
-            if (errorCode != 0)
+            using (SqlConnection connection = new SqlConnection(connString))
             {
-                throw new Exception(errorCode + "(Folio): " + SDK.rError(errorCode));
-            }
+                SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.Add("@PageNumber", SqlDbType.Int).Value = pageNumber;
+                command.Parameters.Add("@RowsOfPage", SqlDbType.Int).Value = rows;
 
-            infoDocumento.folio = (int) Convert.ToDouble(aValor.ToString());
+                connection.Open();
+                List<InfoDocumento> lDocumento = new List<InfoDocumento>();
 
-            errorCode = SDK.fLeeDatoDocumento("cSerieDocumento", aValor, 256);
-
-            if (errorCode != 0)
-            {
-                throw new Exception(errorCode + "(SerieDocumento): " + SDK.rError(errorCode));
-            }
-
-            infoDocumento.serie = aValor.ToString();
-
-            errorCode = SDK.fLeeDatoDocumento("cFecha", aValor, 256);
-
-            if (errorCode != 0)
-            {
-                throw new Exception(errorCode + "(Fecha): " + SDK.rError(errorCode));
-            }
-
-            infoDocumento.fecha = aValor.ToString();
-
-            errorCode = SDK.fLeeDatoDocumento("cRazonSocial", aValor, 256);
-
-            if (errorCode != 0)
-            {
-                throw new Exception(errorCode + "(RazonSocial): " + SDK.rError(errorCode));
-            }
-
-            infoDocumento.razonSocialCliente = aValor.ToString();
-
-            errorCode = SDK.fLeeDatoDocumento("cTotal", aValor, 256);
-
-            if (errorCode != 0)
-            {
-                throw new Exception(errorCode + "(Total): " + SDK.rError(errorCode));
-            }
-
-            infoDocumento.total = aValor.ToString();
-
-            errorCode = SDK.fLeeDatoDocumento("cPendiente", aValor, 256);
-
-            if (errorCode != 0)
-            {
-                throw new Exception(errorCode + "(Pendiente): " + SDK.rError(errorCode));
-            }
-
-            infoDocumento.pendiente = aValor.ToString();
-
-            return infoDocumento;
-        }
-
-        public ListOfDocuments returnLastDocumentos(int numberOfDocs)
-        {
-            List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
-
-            errorCode = SDK.fPosUltimoDocumento();
-            if (errorCode != 0)
-                throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
-            for (int i = 1; i <= numberOfDocs; i++)
-            {
-                try
+                using (SqlDataReader reader = command.ExecuteReader())
                 {
-                    InfoDocumento infoDocumento = returnDocumentos();
-                    lDocumentos.Add(infoDocumento);
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
-
-                if (i != numberOfDocs)
-                {
-                    errorCode = SDK.fPosAnteriorDocumento();
-                    if (errorCode != 0)
+                    while (reader.Read())
                     {
-                        if (errorCode == 1)
-                            return new ListOfDocuments(lDocumentos, true, true);
-                        //return new FunctionReturnedValue(true, lDocumentos, true, true);
-
-                        throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
+                        InfoDocumento doc = new InfoDocumento();
+                        doc.nombreConcepto = reader.GetString(0).Trim();
+                        doc.codConcepto = reader.GetString(1).Trim();
+                        doc.folio = Convert.ToInt32(reader.GetDouble(2));
+                        doc.serie = reader.GetString(3).Trim();
+                        doc.fecha = reader.GetDateTime(4).ToString("MM/dd/yyyy HH:mm:ss");
+                        doc.razonSocialCliente = reader.GetString(5).Trim();
+                        doc.total = reader.GetDouble(6).ToString().Trim();
+                        doc.pendiente = reader.GetDouble(7).ToString().Trim();
+                        
+                        lDocumento.Add(doc);
                     }
                 }
+                return lDocumento;
             }
-
-            return new ListOfDocuments(lDocumentos, true, false); //last = true; first: false.
-        }
-
-        public ListOfDocuments returnFirstDocumentos(int numberOfDocs)
-        {
-            List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
-
-            errorCode = SDK.fPosPrimerDocumento();
-            if (errorCode != 0)
-                throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
-
-            for (int i = 1; i <= numberOfDocs; i++)
-            {
-                try
-                {
-                    InfoDocumento infoDocumento = returnDocumentos();
-                    lDocumentos.Add(infoDocumento);
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
-
-                if (i != numberOfDocs)
-                {
-                    errorCode = SDK.fPosSiguienteDocumento();
-                    if (errorCode != 0)
-                    {
-                        if (errorCode == 2)
-                            return new ListOfDocuments(lDocumentos, true, true);
-                        //return new FunctionReturnedValue(true, lDocumentos, true, true);
-                        throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
-                    }
-                }
-            }
-
-            return new ListOfDocuments(lDocumentos, false, true); //last: false; first: true.
-        }
-
-        public ListOfDocuments returnNextDocumentos(int numberOfDocs)
-        {
-            List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
-
-            for (int i = 1; i <= numberOfDocs; i++)
-            {
-                errorCode = SDK.fPosSiguienteDocumento();
-                if (errorCode != 0)
-                {
-                    if (errorCode == 2)
-                        return new ListOfDocuments(lDocumentos, true, false); //last: true; first: false.
-
-                    throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
-                }
-
-                try
-                {
-                    InfoDocumento infoDocumento = returnDocumentos();
-                    lDocumentos.Add(infoDocumento);
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
-            }
-
-            if (SDK.fPosSiguienteDocumento() != 0)
-            {
-                if (errorCode == 2)
-                {
-                    return new ListOfDocuments(lDocumentos, true, true);
-                    //last: true; first: false;
-                }
-            }
-
-            SDK.fPosAnteriorDocumento();
-            return new ListOfDocuments(lDocumentos, false, false); //last: false; first: false;
-        }
-
-        public ListOfDocuments returnPrevDocumentos(int numberOfDocs)
-        {
-            List<InfoDocumento> lDocumentos = new List<InfoDocumento>();
-
-            for (int i = 1; i <= numberOfDocs; i++)
-            {
-                errorCode = SDK.fPosAnteriorDocumento();
-                if (errorCode != 0)
-                {
-                    if (errorCode == 1)
-                        return new ListOfDocuments(lDocumentos, false, true);
-                    ; //last: false; first: true.
-
-                    throw new Exception(errorCode + "(): " + SDK.rError(errorCode));
-                }
-
-                try
-                {
-                    InfoDocumento infoDocumento = returnDocumentos();
-                    lDocumentos.Add(infoDocumento);
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
-            }
-
-            if (SDK.fPosAnteriorDocumento() != 0)
-            {
-                if (errorCode == 2)
-                {
-                    return new ListOfDocuments(lDocumentos, true, false);
-                    //last: true; first: false;
-                }
-            }
-
-            errorCode = SDK.fPosSiguienteDocumento();
-
-            return new ListOfDocuments(lDocumentos, false, false); //last: false; first: false.
-        }
-
-        public bool moveForwardsDocumentos(int numberOfDocs)
-        {
-            int lError;
-            for (int i = 1; i < numberOfDocs; i++)
-            {
-                lError = SDK.fPosSiguienteDocumento();
-                if (lError != 0)
-                    return false;
-            }
-
-            return true;
-        }
-
-        public bool moveBackwardsDocumentos(int numberOfDocs)
-        {
-            int lError;
-            for (int i = 1; i < numberOfDocs; i++)
-            {
-                lError = SDK.fPosAnteriorDocumento();
-                if (lError != 0)
-                    return false;
-            }
-
-            return true;
         }
     }
 }

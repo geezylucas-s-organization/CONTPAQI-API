@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using CONTPAQ_API.Services;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +27,18 @@ namespace CONTPAQ_API.Controllers
             }
 
             return StatusCode(500, productoServices.errorMessage);
+        }
+        
+        [HttpGet("GetProductos")] // post api/Cliente/GeProductos
+        public ActionResult getProductos([FromQuery(Name = "PageNumber")] int PageNumber,
+            [FromQuery(Name = "Rows")] int Rows)
+        {
+            ProductoServices clienteServices = new ProductoServices();
+            List<Producto> lCliente = clienteServices.ReturnProducts(PageNumber, Rows);
+            
+            string jsonString;
+            jsonString = JsonSerializer.Serialize(lCliente);
+            return Ok(jsonString);
         }
     }
 }
