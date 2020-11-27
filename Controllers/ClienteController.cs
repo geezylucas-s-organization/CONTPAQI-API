@@ -36,7 +36,7 @@ namespace CONTPAQ_API.Controllers
         {
             ClienteServices clienteServices = new ClienteServices();
             List<Cliente> lCliente = clienteServices.returnClientes(PageNumber, Rows);
-            double total = 0;
+            int total = 0;
 
             string query = "SELECT COUNT(*) AS 'TOTAL' FROM [adpruebas_de_timbrado].[dbo].[admClientes];";
 
@@ -55,10 +55,7 @@ namespace CONTPAQ_API.Controllers
                 }
             }
 
-            double totalPages = total / Rows;
-            totalPages = Math.Ceiling(totalPages);
-
-            ListOfClientes listOfClientes = new ListOfClientes(lCliente, PageNumber, Convert.ToInt32(totalPages));
+            ListOfClientes listOfClientes = new ListOfClientes(lCliente, PageNumber, total);
             string jsonString;
             jsonString = JsonSerializer.Serialize(listOfClientes);
             return Ok(jsonString);

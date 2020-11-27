@@ -211,8 +211,6 @@ namespace CONTPAQ_API.Services
 
                             lPrecios.Add(precio);
                         }
-
-                        reader.GetInt32(14);
                         
                         Producto producto;
 

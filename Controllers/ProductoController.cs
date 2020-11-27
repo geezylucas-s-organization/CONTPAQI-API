@@ -36,7 +36,7 @@ namespace CONTPAQ_API.Controllers
         {
             ProductoServices clienteServices = new ProductoServices();
             List<Producto> lProducto = clienteServices.ReturnProducts(PageNumber, Rows);
-            double total = 0;
+            int total = 0;
 
             string query = "SELECT COUNT(*) AS 'TOTAL' FROM [adpruebas_de_timbrado].[dbo].[admProductos];";
 
@@ -55,10 +55,7 @@ namespace CONTPAQ_API.Controllers
                 }
             }
 
-            double totalPages = total / Rows;
-            totalPages = Math.Ceiling(totalPages);
-
-            ListOfProductos listOfProductos = new ListOfProductos(lProducto, PageNumber, Convert.ToInt32(totalPages));
+            ListOfProductos listOfProductos = new ListOfProductos(lProducto, PageNumber, total);
             string jsonString;
             jsonString = JsonSerializer.Serialize(listOfProductos);
             return Ok(jsonString);

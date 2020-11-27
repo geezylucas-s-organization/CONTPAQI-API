@@ -46,7 +46,7 @@ namespace CONTPAQ_API.Controllers
         {
             DocumentoServices documentoServices = new DocumentoServices();
             List<InfoDocumento> documentos = documentoServices.returnDocumentos(PageNumber, Rows);
-            double total = 0;
+            int total = 0;
 
             string query = "SELECT COUNT(*) AS 'TOTAL' FROM [adpruebas_de_timbrado].[dbo].[admDocumentos];";
 
@@ -65,10 +65,7 @@ namespace CONTPAQ_API.Controllers
                 }
             }
 
-            double totalPages = total / Rows;
-            totalPages = Math.Ceiling(totalPages);
-
-            ListOfDocuments listOfDocuments = new ListOfDocuments(documentos, PageNumber, Convert.ToInt32(totalPages));
+            ListOfDocuments listOfDocuments = new ListOfDocuments(documentos, PageNumber, total);
             string jsonString;
             jsonString = JsonSerializer.Serialize(listOfDocuments);
 
