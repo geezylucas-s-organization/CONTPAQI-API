@@ -54,14 +54,15 @@ namespace CONTPAQ_API
 
     public class ListOfDocuments
     {
+        public int page { get; set; }
+        public int total { get; set; }
         public List<InfoDocumento> data { get; set; }
-        public bool isLast { get; set; }
-        public bool isFirst { get; set; }
-        public ListOfDocuments(List<InfoDocumento> infoDocumentos, bool isLast, bool isFirst)
+
+        public ListOfDocuments(List<InfoDocumento> infoDocumentos, int page, int total)
         {
             this.data = infoDocumentos;
-            this.isLast = isLast;
-            this.isFirst = isFirst;
+            this.page = page;
+            this.total = total;
         }
     }
 

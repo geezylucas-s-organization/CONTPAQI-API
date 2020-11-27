@@ -4,6 +4,7 @@ using System.Text.Json;
 using CONTPAQ_API.Services;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 
 namespace CONTPAQ_API.Controllers
 {
@@ -34,10 +35,32 @@ namespace CONTPAQ_API.Controllers
             [FromQuery(Name = "Rows")] int Rows)
         {
             ProductoServices clienteServices = new ProductoServices();
-            List<Producto> lCliente = clienteServices.ReturnProducts(PageNumber, Rows);
-            
+            List<Producto> lProducto = clienteServices.ReturnProducts(PageNumber, Rows);
+            double total = 0;
+
+            string query = "SELECT COUNT(*) AS 'TOTAL' FROM [adpruebas_de_timbrado].[dbo].[admProductos];";
+
+            string connString = DatabaseServices.GetConnString();
+
+            using (SqlConnection sqlConnection = new SqlConnection(connString))
+            {
+                SqlCommand cmd = new SqlCommand(query, sqlConnection);
+                sqlConnection.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        total = reader.GetInt32(0);
+                    }
+                }
+            }
+
+            double totalPages = total / Rows;
+            totalPages = Math.Ceiling(totalPages);
+
+            ListOfProductos listOfProductos = new ListOfProductos(lProducto, PageNumber, Convert.ToInt32(totalPages));
             string jsonString;
-            jsonString = JsonSerializer.Serialize(lCliente);
+            jsonString = JsonSerializer.Serialize(listOfProductos);
             return Ok(jsonString);
         }
     }

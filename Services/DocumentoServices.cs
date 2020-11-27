@@ -113,22 +113,11 @@ namespace CONTPAQ_API.Services
                 }
             }
 
-            if (documento.docEnPlantiila.isPlantilla)
+            if (documento.docEnPlantiila != null)
             {
-                PlantillasContext db = new PlantillasContext();
-                Documentos doc =
-                    db.Documentos.FirstOrDefault(x => x.Documentoid == documento.docEnPlantiila.idPlantilla);
-                try
-                {
-                    doc.ProximaFactura.Value.AddDays(doc.PeriodoDias.Value);
-                }
-                catch (Exception e)
-                {
-                    errorMessage = e.Message;
-                    return false;
-                }
+                PlantillasServices.updatePlantilla(documento);
             }
-
+            
             return true;
         }
 
@@ -223,6 +212,8 @@ namespace CONTPAQ_API.Services
                             lPrecios.Add(precio);
                         }
 
+                        reader.GetInt32(14);
+                        
                         Producto producto;
 
                         if (lPrecios.Count > 0)
@@ -306,7 +297,7 @@ namespace CONTPAQ_API.Services
                 "FROM [adpruebas_de_timbrado].[dbo].[admDocumentos] " +
                 "INNER JOIN  [adpruebas_de_timbrado].[dbo].[admConceptos] " +
                 "ON admDocumentos.CIDCONCEPTODOCUMENTO = admConceptos.CIDCONCEPTODOCUMENTO " +
-                "ORDER BY CIDDOCUMENTO " +
+                "ORDER BY CFOLIO DESC " +
                 "OFFSET ( @PageNumber - 1) * @RowsOfPage ROWS " +
                 "FETCH NEXT @RowsOfPage ROWS ONLY";
 

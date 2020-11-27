@@ -6,6 +6,7 @@ using System.Text.Json;
 using CONTPAQ_API.Services;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.Data.SqlClient;
 
 namespace CONTPAQ_API.Controllers
 {
@@ -44,8 +45,30 @@ namespace CONTPAQ_API.Controllers
             [FromQuery(Name = "Rows")] int Rows)
         {
             DocumentoServices documentoServices = new DocumentoServices();
-            List<InfoDocumento> listOfDocuments = documentoServices.returnDocumentos(PageNumber, Rows);
+            List<InfoDocumento> documentos = documentoServices.returnDocumentos(PageNumber, Rows);
+            double total = 0;
 
+            string query = "SELECT COUNT(*) AS 'TOTAL' FROM [adpruebas_de_timbrado].[dbo].[admDocumentos];";
+
+            string connString = DatabaseServices.GetConnString();
+
+            using (SqlConnection sqlConnection = new SqlConnection(connString))
+            {
+                SqlCommand cmd = new SqlCommand(query, sqlConnection);
+                sqlConnection.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        total = reader.GetInt32(0);
+                    }
+                }
+            }
+
+            double totalPages = total / Rows;
+            totalPages = Math.Ceiling(totalPages);
+
+            ListOfDocuments listOfDocuments = new ListOfDocuments(documentos, PageNumber, Convert.ToInt32(totalPages));
             string jsonString;
             jsonString = JsonSerializer.Serialize(listOfDocuments);
 

@@ -150,5 +150,21 @@ namespace CONTPAQ_API.Services
                 }
             }
         }
+
+        public static bool updatePlantilla(Documento documento)
+        {
+            PlantillasContext db = new PlantillasContext();
+            Documentos doc =
+                db.Documentos.FirstOrDefault(x => x.Documentoid == documento.docEnPlantiila.idPlantilla);
+            try
+            {
+                doc.ProximaFactura.Value.AddDays(doc.PeriodoDias.Value);
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+            return true;
+        }
     }
 }

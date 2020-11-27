@@ -1,4 +1,6 @@
-﻿namespace CONTPAQ_API.Controllers
+﻿using System.Collections.Generic;
+
+namespace CONTPAQ_API.Controllers
 {
     public class ClienteJSON
     {
@@ -109,5 +111,19 @@
         public double cImporteExtra2 { get; set; }
         public double cImporteExtra3 { get; set; }
         public double cImporteExtra4 { get; set; }
+    }
+
+    public class ListOfClientes
+    {
+        public int page { get; set; }
+        public int total { get; set; }
+        public List<Cliente> data { get; set; }
+
+        public ListOfClientes(List<Cliente> infocClientes, int page, int total)
+        {
+            this.data = infocClientes;
+            this.page = page;
+            this.total = total;
+        }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace CONTPAQ_API
+﻿using System.Collections.Generic;
+
+namespace CONTPAQ_API
 {
     public class ProductoJSON
     {
@@ -85,5 +87,19 @@
         public float cImporteExtra2 { get; set; }
         public float cImporteExtra3 { get; set; }
         public float cImporteExtra4 { get; set; }
+    }
+    
+    public class ListOfProductos
+    {
+        public int page { get; set; }
+        public int total { get; set; }
+        public List<Producto> data { get; set; }
+
+        public ListOfProductos(List<Producto> infoProductos, int page, int total)
+        {
+            this.data = infoProductos;
+            this.page = page;
+            this.total = total;
+        }
     }
 }

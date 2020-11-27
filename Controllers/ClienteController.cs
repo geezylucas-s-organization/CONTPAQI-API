@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using CONTPAQ_API.Services;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Microsoft.Data.SqlClient;
 
 namespace CONTPAQ_API.Controllers
 {
@@ -34,9 +36,31 @@ namespace CONTPAQ_API.Controllers
         {
             ClienteServices clienteServices = new ClienteServices();
             List<Cliente> lCliente = clienteServices.returnClientes(PageNumber, Rows);
-            
+            double total = 0;
+
+            string query = "SELECT COUNT(*) AS 'TOTAL' FROM [adpruebas_de_timbrado].[dbo].[admClientes];";
+
+            string connString = DatabaseServices.GetConnString();
+
+            using (SqlConnection sqlConnection = new SqlConnection(connString))
+            {
+                SqlCommand cmd = new SqlCommand(query, sqlConnection);
+                sqlConnection.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        total = reader.GetInt32(0);
+                    }
+                }
+            }
+
+            double totalPages = total / Rows;
+            totalPages = Math.Ceiling(totalPages);
+
+            ListOfClientes listOfClientes = new ListOfClientes(lCliente, PageNumber, Convert.ToInt32(totalPages));
             string jsonString;
-            jsonString = JsonSerializer.Serialize(lCliente);
+            jsonString = JsonSerializer.Serialize(listOfClientes);
             return Ok(jsonString);
         }
     }

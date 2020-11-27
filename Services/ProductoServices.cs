@@ -40,11 +40,10 @@ namespace CONTPAQ_API.Services
             string query =
                 "SELECT CIDPRODUCTO, CCODIGOPRODUCTO, CNOMBREPRODUCTO, CPRECIO1, CPRECIO2, CPRECIO3, CPRECIO4, CPRECIO5, CPRECIO6,CPRECIO7, CPRECIO8, CPRECIO9, CPRECIO10 " +
                 "FROM [adpruebas_de_timbrado].[dbo].[admProductos] " +
-                "ORDER BY CIDPRODUCTO " +
+                "ORDER BY CIDPRODUCTO DESC " +
                 "OFFSET (@PageNumber-1)*@RowsOfPage ROWS " +
                 "FETCH NEXT @RowsOfPage ROWS ONLY;";
-
-
+            
             string connString = DatabaseServices.GetConnString();
 
             using (SqlConnection connection = new SqlConnection(connString))

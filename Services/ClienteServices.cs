@@ -41,7 +41,7 @@ namespace CONTPAQ_API.Services
             
             string query =
                 "SELECT CCODIGOCLIENTE, CRAZONSOCIAL, CRFC, CIDMONEDA FROM [adpruebas_de_timbrado].[dbo].[admClientes] " +
-                "ORDER BY CIDCLIENTEPROVEEDOR " +
+                "ORDER BY CIDCLIENTEPROVEEDOR DESC " +
                 "OFFSET (@PageNumber-1)*@RowsOfPage ROWS " +
                 "FETCH NEXT @RowsOfPage ROWS ONLY";
 
