@@ -182,7 +182,9 @@ namespace CONTPAQ_API.Services
             List<Producto> lProductos = new List<Producto>();
             string query =
                 "SELECT CIDPRODUCTO, CCODIGOPRODUCTO, CNOMBREPRODUCTO, CPRECIO1, CPRECIO2, CPRECIO3, CPRECIO4, " +
-                "CPRECIO5, CPRECIO6,CPRECIO7, CPRECIO8, CPRECIO9, CPRECIO10 FROM [adpruebas_de_timbrado].[dbo].[admProductos]";
+                "CPRECIO5, CPRECIO6,CPRECIO7, CPRECIO8, CPRECIO9, CPRECIO10, CCLAVESAT, CTIPOPRODUCTO " +
+                "FROM [adpruebas_de_timbrado].[dbo].[admProductos] " +
+                "ORDER BY CCODIGOPRODUCTO DESC;";
 
             string connString = DatabaseServices.GetConnString();
 
@@ -201,7 +203,7 @@ namespace CONTPAQ_API.Services
 
                         List<double> lPrecios = new List<double>();
 
-                        for (int i = 4; i < 14; i++)
+                        for (int i = 3; i < 13; i++)
                         {
                             double precio = reader.GetDouble(i);
                             if (precio == 0)
@@ -214,13 +216,33 @@ namespace CONTPAQ_API.Services
                         
                         Producto producto;
 
+                        
+                        string codigoProducto = reader.GetString(1);
+                        string nombreProducto = reader.GetString(2);
+                        string claveSAT = reader.GetString(13);
+                        int tipoProducto = reader.GetInt32(14);
+                        string tipoProductoString = string.Empty;
+
+                        if (tipoProducto == 1)
+                        {
+                            tipoProductoString = "Productos";
+                        }
+                        else if (tipoProducto == 2)
+                        {
+                            tipoProductoString = "Paquete";
+                        }
+                        else if (tipoProducto == 3)
+                        {
+                            tipoProductoString = "Servicio";
+                        }
+                        
                         if (lPrecios.Count > 0)
                         {
-                            producto = new Producto(reader.GetString(1), reader.GetString(2), lPrecios);
+                            producto = new Producto(codigoProducto, nombreProducto, claveSAT.ToString(), tipoProductoString, lPrecios);
                         }
                         else
                         {
-                            producto = new Producto(reader.GetString(1), reader.GetString(2));
+                            producto = new Producto(codigoProducto, nombreProducto, claveSAT.ToString(), tipoProductoString);
                         }
 
                         lProductos.Add(producto);
@@ -234,8 +256,14 @@ namespace CONTPAQ_API.Services
         public List<Cliente> returnClientes()
         {
             List<Cliente> lCliente = new List<Cliente>();
+            string codigoCliente, razonSocial, RFC, moneda, tipoCliente = string.Empty;
+            int idMoneda, idTipoCliente;
             string query =
-                "SELECT CCODIGOCLIENTE, CRAZONSOCIAL, CRFC, CIDMONEDA FROM [adpruebas_de_timbrado].[dbo].[admClientes]";
+                "SELECT CCODIGOCLIENTE, CRAZONSOCIAL, CRFC, admClientes.CIDMONEDA, CTIPOCLIENTE, CNOMBREMONEDA "+
+                "FROM [adpruebas_de_timbrado].[dbo].[admClientes] "+
+                "INNER JOIN [adpruebas_de_timbrado].[dbo].[admMonedas] " +
+                "ON admMonedas.CIDMONEDA = admClientes.CIDMONEDA " +
+                "ORDER BY CCODIGOCLIENTE DESC;";
 
             string connString = DatabaseServices.GetConnString();
 
@@ -247,13 +275,15 @@ namespace CONTPAQ_API.Services
                 {
                     while (reader.Read())
                     {
-                        if (reader.GetString(0).Trim() == "(Ninguno)" && reader.GetString(1).Trim() == "(Ninguno)")
-                        {
-                            reader.Read();
-                        }
-
-                        Cliente cliente = new Cliente(reader.GetString(0), reader.GetString(1), reader.GetString(2),
-                            reader.GetInt32(3));
+                        codigoCliente = reader.GetString(0);
+                        razonSocial = reader.GetString(1);
+                        RFC = reader.GetString(2);
+                        idMoneda = reader.GetInt32(3);
+                        idTipoCliente = reader.GetInt32(4);
+                        tipoCliente = idTipoCliente == 1 ? "Cliente" : "Proveedor";
+                        moneda = reader.GetString(5);
+                        
+                        Cliente cliente = new Cliente(codigoCliente, razonSocial, RFC, idMoneda, moneda, tipoCliente);
                         lCliente.Add(cliente);
                     }
                 }

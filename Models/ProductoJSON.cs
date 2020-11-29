@@ -95,6 +95,7 @@ namespace CONTPAQ_API
         public int total { get; set; }
         public List<Producto> data { get; set; }
 
+
         public ListOfProductos(List<Producto> infoProductos, int page, int total)
         {
             this.data = infoProductos;

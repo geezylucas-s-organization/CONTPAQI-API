@@ -27,10 +27,18 @@ namespace CONTPAQ_API.Services
             }
 
             // TODO: I don't know if your logic is like this 
-            errorCode = SDK.fEditaProducto();
-            errorCode = SDK.fSetDatoProducto("CCLAVESAT", producto.cClaveSAT);
-            errorCode = SDK.fGuardaProducto();
 
+            string connString = DatabaseServices.GetConnString();
+
+            using (SqlConnection sqlConnection = new SqlConnection(connString))
+            {
+                string query = @"UPDATE [adpruebas_de_timbrado].[dbo].[admProductos] SET CCLAVESAT = '01010101' WHERE CCODIGOPRODUCTO = @codProd;";
+                SqlCommand cmd = new SqlCommand(query, sqlConnection);
+                sqlConnection.Open();
+                cmd.Parameters.Add("@codProd", SqlDbType.NVarChar);
+                cmd.Parameters["@codProd"].Value = producto.cCodigoProducto;
+                cmd.ExecuteNonQuery();
+            }
             return true;
         }
 
@@ -38,7 +46,8 @@ namespace CONTPAQ_API.Services
         {
             List<Producto> lProductos = new List<Producto>();
             string query =
-                "SELECT CIDPRODUCTO, CCODIGOPRODUCTO, CNOMBREPRODUCTO, CPRECIO1, CPRECIO2, CPRECIO3, CPRECIO4, CPRECIO5, CPRECIO6,CPRECIO7, CPRECIO8, CPRECIO9, CPRECIO10 " +
+                "SELECT CIDPRODUCTO, CCODIGOPRODUCTO, CNOMBREPRODUCTO, CPRECIO1, CPRECIO2, CPRECIO3, CPRECIO4, " +
+                "CPRECIO5, CPRECIO6,CPRECIO7, CPRECIO8, CPRECIO9, CPRECIO10, CCLAVESAT, CTIPOPRODUCTO " +
                 "FROM [adpruebas_de_timbrado].[dbo].[admProductos] " +
                 "ORDER BY CIDPRODUCTO DESC " +
                 "OFFSET (@PageNumber-1)*@RowsOfPage ROWS " +
@@ -59,7 +68,7 @@ namespace CONTPAQ_API.Services
                     {
                         List<double> lPrecios = new List<double>();
 
-                        for (int i = 4; i < 14; i++)
+                        for (int i = 3; i < 13; i++)
                         {
                             double precio = reader.GetDouble(i);
                             if (precio == 0)
@@ -72,13 +81,33 @@ namespace CONTPAQ_API.Services
 
                         Producto producto;
 
+                        string codigoProducto = reader.GetString(1);
+                        string nombreProducto = reader.GetString(2);
+                        string claveSAT = reader.GetString(13);
+                        int tipoProducto = reader.GetInt32(14);
+                        string tipoProductoString = string.Empty;
+
+                        if (tipoProducto == 1)
+                        {
+                            tipoProductoString = "Productos";
+                        }
+                        else if (tipoProducto == 2)
+                        {
+                            tipoProductoString = "Paquete";
+                        }
+                        else if (tipoProducto == 3)
+                        {
+                            tipoProductoString = "Servicio";
+                        }
+                        
+
                         if (lPrecios.Count > 0)
                         {
-                            producto = new Producto(reader.GetString(1), reader.GetString(2), lPrecios);
+                            producto = new Producto(codigoProducto, nombreProducto, claveSAT.ToString(), tipoProductoString, lPrecios);
                         }
                         else
                         {
-                            producto = new Producto(reader.GetString(1), reader.GetString(2));
+                            producto = new Producto(codigoProducto, nombreProducto, claveSAT.ToString(), tipoProductoString);
                         }
 
                         lProductos.Add(producto);
