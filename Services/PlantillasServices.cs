@@ -24,7 +24,7 @@ namespace CONTPAQ_API.Services
 
         public static void func()
         {
-            RecurringJob.AddOrUpdate(() => checkForPlantillas(), Cron.Daily());
+            RecurringJob.AddOrUpdate(() => checkForPlantillas(), Cron.Daily(), TimeZoneInfo.Local);
 
             using (var server = new BackgroundJobServer())
             {

@@ -113,4 +113,18 @@ namespace CONTPAQ_API.Models
             Unidades = movimientos.Unidades;
         }
     }
+    public class ListOfPlantillas
+    {
+        public int page { get; set; }
+        public int total { get; set; }
+        public List<DocumentoPlantilla> data { get; set; }
+
+
+        public ListOfPlantillas(List<DocumentoPlantilla> infoPlantilla, int page, int total)
+        {
+            this.data = infoPlantilla;
+            this.page = page;
+            this.total = total;
+        }
+    }
 }

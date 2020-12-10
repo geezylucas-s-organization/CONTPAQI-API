@@ -2,13 +2,6 @@
 
 namespace CONTPAQ_API
 {
-    public class CreateDocumentoView
-    {
-        public List<Producto> productosYServicios { get; set; }
-        public List<Cliente> clientesYProveedores { get; set; }
-        public List<Concepto> conceptos { get; set; }
-    }
-
     public class Producto
     {
         public string codigo { get; set; }
@@ -50,20 +43,6 @@ namespace CONTPAQ_API
             this.idMoneda = idMoneda;
             this.moneda = moneda;
             this.tipoCliente = tipoCliente;
-        }
-    }
-
-    public class Concepto
-    {
-        public int codigoConcepto { get; set; }
-        public string nombreConcepto { get; set; }
-        public int noFolio { get; set; }
-
-        public Concepto(int codigoConcepto, string nombreConcepto, int noFolio)
-        {
-            this.codigoConcepto = codigoConcepto;
-            this.nombreConcepto = nombreConcepto;
-            this.noFolio = noFolio;
         }
     }
 }

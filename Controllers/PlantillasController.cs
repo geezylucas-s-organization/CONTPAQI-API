@@ -135,9 +135,10 @@ namespace CONTPAQ_API.Controllers
             try
             {
                 var plantillas = (from doc in db.Documentos
-                    join cabecera in db.Cabeceras on doc.Documentoid equals cabecera.Documentoid
-                    select new {doc, codigoClienteProveedor = cabecera.CodigoCteProv}).Skip((Page - 1) * Size).Take(Size);
-                
+                        join cabecera in db.Cabeceras on doc.Documentoid equals cabecera.Documentoid
+                        select new {doc, codigoClienteProveedor = cabecera.CodigoCteProv}).Skip((Page - 1) * Size)
+                    .Take(Size).OrderByDescending(x => x.doc.Documentoid);
+
                 foreach (var item in plantillas)
                 {
                     Documentos documento = item.doc;
@@ -149,8 +150,12 @@ namespace CONTPAQ_API.Controllers
             {
                 return StatusCode(500, e.Message);
             }
-            
-            jsonresponse = JsonSerializer.Serialize(documentosPlantilla);
+
+            int total = db.Documentos.Count();
+
+            ListOfPlantillas listOfPlantillas = new ListOfPlantillas(documentosPlantilla, Page, total);
+
+            jsonresponse = JsonSerializer.Serialize(listOfPlantillas);
 
             return Ok(jsonresponse);
         }

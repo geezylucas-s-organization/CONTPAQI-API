@@ -16,30 +16,7 @@ namespace CONTPAQ_API.Controllers
     public class DocumentoController : Controller
     {
         private string prevAction = string.Empty;
-
-        [HttpGet("FillView")] // GET api/Documento/FillView
-        public ActionResult FillCreateDocumentView()
-        {
-            DocumentoServices documentoServices = new DocumentoServices();
-            CreateDocumentoView respuesta = new CreateDocumentoView();
-            try
-            {
-                respuesta.productosYServicios = documentoServices.returnProductos();
-                respuesta.clientesYProveedores = documentoServices.returnClientes();
-                respuesta.conceptos = documentoServices.returnConceptos();
-            }
-            catch (Exception e)
-            {
-                return StatusCode(500, e);
-            }
-
-            string jsonString;
-            jsonString = JsonSerializer.Serialize(respuesta);
-            //PlantillasServices.func();
-
-            return Ok(jsonString);
-        }
-
+        
         [HttpGet("GetDocumentos")] // GET api/Documento/GetDocumentos
         public ActionResult GetDocumentos([FromQuery(Name = "PageNumber")] int PageNumber,
             [FromQuery(Name = "Rows")] int Rows)
